@@ -8,12 +8,11 @@ interface Customer {
   fatherName: string;
   contact: string;
   model: string;
-  imei1: string;
-  imei2: string;
+  imei:string;
   price: number;
   emiAmount: number;
   downPayment: number;
-  emiDetails: string;
+  emiDetails: [];
 }
 
 export default function ViewCustomers() {
