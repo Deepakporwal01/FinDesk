@@ -34,9 +34,7 @@ export default function EmiListPage() {
   const fetchEmis = async () => {
     setLoading(true);
     try {
-      const res = await fetch(
-        `/api/admin/emi-list?type=${type}`
-      );
+      const res = await fetch(`/api/emi-list?type=${type}`);
       const data = await res.json();
       setEmis(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -54,15 +52,11 @@ export default function EmiListPage() {
   /* =========================
      MARK EMI AS PAID
   ========================= */
-  const markAsPaid = async (
-    customerId: string,
-    emiIndex: number
-  ) => {
+  const markAsPaid = async (customerId: string, emiIndex: number) => {
     try {
-      await fetch(
-        `/api/customers/${customerId}/emi/${emiIndex}`,
-        { method: "PUT" }
-      );
+      await fetch(`/api/customers/${customerId}/emi/${emiIndex}`, {
+        method: "PUT",
+      });
 
       // Refresh list after update
       fetchEmis();
@@ -99,36 +93,27 @@ export default function EmiListPage() {
             >
               {/* LEFT SECTION */}
               <div>
-                <p className="font-semibold text-gray-800">
-                  {emi.name}
-                </p>
+                <p className="font-semibold text-gray-800">{emi.name}</p>
 
                 <p className="text-sm text-gray-500">
                   {emi.model} • {emi.contact}
                 </p>
 
                 <p className="text-sm text-gray-500">
-                  Due:{" "}
-                  {new Date(emi.dueDate).toDateString()}
+                  Due: {new Date(emi.dueDate).toDateString()}
                 </p>
 
                 {/* PAID DATE (ONLY IF PAID) */}
-                {emi.status === "PAID" &&
-                  emi.paidDate && (
-                    <p className="text-sm text-green-600">
-                      Paid on:{" "}
-                      {new Date(
-                        emi.paidDate
-                      ).toDateString()}
-                    </p>
-                  )}
+                {emi.status === "PAID" && emi.paidDate && (
+                  <p className="text-sm text-green-600">
+                    Paid on: {new Date(emi.paidDate).toDateString()}
+                  </p>
+                )}
               </div>
 
               {/* RIGHT SECTION */}
               <div className="text-right">
-                <p className="font-bold text-lg">
-                  ₹{emi.amount}
-                </p>
+                <p className="font-bold text-lg">₹{emi.amount}</p>
 
                 <span
                   className={`inline-block mt-1 text-sm px-3 py-1 rounded-full ${
@@ -143,12 +128,7 @@ export default function EmiListPage() {
                 {/* MARK PAID BUTTON */}
                 {emi.status === "PENDING" && (
                   <button
-                    onClick={() =>
-                      markAsPaid(
-                        emi.customerId,
-                        emi.emiIndex
-                      )
-                    }
+                    onClick={() => markAsPaid(emi.customerId, emi.emiIndex)}
                     className="block mt-2 text-sm px-4 py-1.5 rounded-lg
                                bg-green-600 text-white
                                hover:bg-green-700 transition"

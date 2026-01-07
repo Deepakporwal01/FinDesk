@@ -2,22 +2,21 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import DashboardCard from "@/app/dashboard/page.tsx";
+import DashboardCard from "@/app/dashboard/page";
 import { useEffect, useState } from "react";
 
-interface DashboardStats {
+export default function Home() {
+  interface DashboardStats {
   totalEmis: number;
   paidEmis: number;
   pendingEmis: number;
   dueToday: number;
 }
-
-export default function Home() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
 
   useEffect(() => {
     const fetchStats = async () => {
-      const res = await fetch("/api/admin/dashboard");
+      const res = await fetch("/api/emi-stats");
       const data = await res.json();
       setStats(data);
     };
@@ -39,9 +38,7 @@ export default function Home() {
               height={45}
               className="rounded-lg"
             />
-            <h1 className="text-2xl font-bold text-green-600">
-              Porwal Mobile
-            </h1>
+            <h1 className="text-2xl font-bold text-green-600">Porwal Mobile</h1>
           </div>
 
           {/* CTA */}
@@ -59,10 +56,10 @@ export default function Home() {
               View Customers
             </Link>
             <Link
-              href="/dashboard"
+              href="/dashboard-details"
               className="border border-green-600 text-green-600 px-4 py-2 rounded-lg hover:bg-green-50 transition"
             >
-            Dashboard
+              Dashboard
             </Link>
           </div>
         </div>
@@ -70,25 +67,33 @@ export default function Home() {
 
       {/* Dashboard Cards */}
       <section className="max-w-7xl mx-auto px-6 py-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <DashboardCard
-          title="Total EMIs"
-          value={stats?.totalEmis ?? "--"}
-        />
-        <DashboardCard
-          title="Paid EMIs"
-          value={stats?.paidEmis ?? "--"}
-          color="green"
-        />
-        <DashboardCard
-          title="Pending EMIs"
-          value={stats?.pendingEmis ?? "--"}
-          color="yellow"
-        />
-        <DashboardCard
-          title="Due Today"
-          value={stats?.dueToday ?? "--"}
-          color="red"
-        />
+        <Link href="/emi-list?type=total">
+          <DashboardCard title="Total EMIs" value={stats?.totalEmis ?? "--"} />
+        </Link>
+
+        <Link href="/emi-list?type=paid">
+          <DashboardCard
+            title="Paid EMIs"
+            value={stats?.paidEmis ?? "--"}
+            color="green"
+          />
+        </Link>
+
+        <Link href="/emi-list?type=pending">
+          <DashboardCard
+            title="Pending EMIs"
+            value={stats?.pendingEmis ?? "--"}
+            color="yellow"
+          />
+        </Link>
+
+        <Link href="/emi-list?type=due-today">
+          <DashboardCard
+            title="Due Today"
+            value={stats?.dueToday ?? "--"}
+            color="red"
+          />
+        </Link>
       </section>
 
       {/* Hero */}
@@ -117,5 +122,3 @@ export default function Home() {
     </div>
   );
 }
-
-
