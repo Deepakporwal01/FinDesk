@@ -10,10 +10,10 @@ if (!MONGODB_URI) {
  * Global cache to prevent multiple connections in dev
  */
 declare global {
-  // eslint-disable-next-line no-var
+   
   var mongoose: {
-    conn: typeof mongoose | null;
-    promise: Promise<typeof mongoose> | null;
+    conn: mongoose.Mongoose | null;
+    promise: Promise<mongoose.Mongoose> | null;
   } | undefined;
 }
 
