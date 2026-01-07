@@ -64,7 +64,7 @@ export default function Page() {
       return [];
 
     const emis = [];
-    let date = new Date(formData.firstEmiDate);
+    const date = new Date(formData.firstEmiDate);
 
     for (let i = 0; i < Number(formData.emiMonths); i++) {
       emis.push({
@@ -91,9 +91,13 @@ export default function Page() {
         {[
           { name: "name", label: "Name" },
           { name: "fatherName", label: "Father's Name" },
+          { name: "address", label: "Address" },
           { name: "contact", label: "Contact Number" },
           { name: "model", label: "Phone Model" },
-          { name: "imei", label: "IMEI Number" },
+          { name: "imei", label: "IMEI Number/Serial Number" },
+          { name: "alternate number", label: "Alternate Number" },
+          { name: "supplier", label: "Supplier" },
+          { name: "suppliernumber", label: "Supplier Number" },
         ].map((f) => (
           <Input
             key={f.name}

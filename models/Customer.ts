@@ -64,12 +64,15 @@ const customerSchema = new Schema<ICustomer>(
     },
     fatherName: {
       type: String,
+       required: true,
     },
     contact: {
       type: String,
+       required: true,
     },
     model: {
       type: String,
+       required: true,
     },
     imei: {
       type: String,
@@ -78,12 +81,15 @@ const customerSchema = new Schema<ICustomer>(
     },
     price: {
       type: Number,
+       required: true,
     },
     emiAmount: {
       type: Number,
+       required: true,
     },
     downPayment: {
       type: Number,
+       required: true,
     },
     emis: {
       type: [emiSchema], // ✅ ARRAY OF EMI OBJECTS

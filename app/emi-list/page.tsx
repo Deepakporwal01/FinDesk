@@ -1,6 +1,8 @@
 "use client";
+
 export const dynamic = "force-dynamic";
-import { useEffect, useState } from "react";
+
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 /* =========================
@@ -19,9 +21,9 @@ interface EmiItem {
 }
 
 /* =========================
-   COMPONENT
+   INTERNAL CONTENT COMPONENT
 ========================= */
-export default function EmiListPage() {
+function EmiListContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const type = searchParams.get("type") || "total";
@@ -30,7 +32,7 @@ export default function EmiListPage() {
   const [loading, setLoading] = useState(true);
 
   /* =========================
-     FETCH EMI LIST
+      FETCH EMI LIST
   ========================= */
   useEffect(() => {
     const fetchEmis = async () => {
@@ -51,7 +53,7 @@ export default function EmiListPage() {
   }, [type]);
 
   /* =========================
-     MARK EMI AS PAID
+      MARK EMI AS PAID
   ========================= */
   const markAsPaid = async (customerId: string, emiIndex: number) => {
     try {
@@ -68,7 +70,7 @@ export default function EmiListPage() {
   };
 
   /* =========================
-     LOADING STATE
+      LOADING STATE
   ========================= */
   if (loading) {
     return (
@@ -81,14 +83,13 @@ export default function EmiListPage() {
   }
 
   /* =========================
-     UI
+      UI
   ========================= */
   return (
     <div className="min-h-screen bg-white px-4 sm:px-6 py-8">
       
       {/* HEADER */}
       <div className="mb-8">
-        {/* BACK BUTTON */}
         <button
           onClick={() => router.back()}
           className="mb-4 inline-flex items-center gap-2
@@ -189,5 +190,20 @@ export default function EmiListPage() {
         </div>
       )}
     </div>
+  );
+}
+
+/* =========================
+   MAIN EXPORT (WITH SUSPENSE)
+========================= */
+export default function EmiListPage() {
+  return (
+    <Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center bg-white">
+            <p className="text-gray-500 text-lg animate-pulse">Loading...</p>
+        </div>
+    }>
+      <EmiListContent />
+    </Suspense>
   );
 }
