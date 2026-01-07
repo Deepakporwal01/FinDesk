@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       emiAmount: Number(emiAmount),
       emis, // 🔥 GENERATED EMIs
     });
-console.log(customer)
+ 
     return NextResponse.json(customer, { status: 201 });
   } catch (error: any) {
     return NextResponse.json(

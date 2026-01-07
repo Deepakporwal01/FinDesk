@@ -56,7 +56,7 @@ export async function GET(req: Request) {
         }
       });
     });
-
+ 
     return NextResponse.json(result, { status: 200 });
   } catch (error: any) {
     return NextResponse.json(

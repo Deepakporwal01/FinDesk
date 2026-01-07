@@ -15,7 +15,7 @@ export default function Page() {
     
       useEffect(() => {
         const fetchStats = async () => {
-          const res = await fetch("/api/dashboard");
+          const res = await fetch("/api/emi-stats");
           const data = await res.json();
           setStats(data);
         };

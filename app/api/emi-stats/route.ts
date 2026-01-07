@@ -11,7 +11,7 @@ export async function GET(req: Request) {
     let totalEmis = 0;
     let pendingEmis = 0;
     let paidEmis = 0;
-    let dueTodayEmis = 0;
+    let dueToday = 0;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -27,7 +27,7 @@ export async function GET(req: Request) {
           dueDate.setHours(0, 0, 0, 0);
 
           if (dueDate.getTime() === today.getTime()) {
-            dueTodayEmis++;
+            dueToday++;
           }
         }
 
@@ -42,7 +42,7 @@ export async function GET(req: Request) {
         totalEmis,
         pendingEmis,
         paidEmis,
-        dueTodayEmis,
+        dueToday,
       },
       { status: 200 }
     );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 /* =========================
    TYPES
@@ -23,6 +23,7 @@ interface EmiItem {
 ========================= */
 export default function EmiListPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const type = searchParams.get("type") || "total";
 
   const [emis, setEmis] = useState<EmiItem[]>([]);
@@ -57,8 +58,6 @@ export default function EmiListPage() {
       await fetch(`/api/customers/${customerId}/emi/${emiIndex}`, {
         method: "PUT",
       });
-
-      // Refresh list after update
       fetchEmis();
     } catch (error) {
       console.error("Failed to mark EMI as paid", error);
@@ -66,57 +65,100 @@ export default function EmiListPage() {
   };
 
   /* =========================
-     UI STATES
+     LOADING STATE
   ========================= */
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Loading EMI list...
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <p className="text-gray-500 text-lg animate-pulse">
+          Loading EMI list...
+        </p>
       </div>
     );
   }
 
+  /* =========================
+     UI
+  ========================= */
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <h1 className="text-3xl font-bold mb-6 capitalize">
-        {type.replace("-", " ")} EMI Customers
-      </h1>
+    <div className="min-h-screen bg-white px-4 sm:px-6 py-8">
+      
+      {/* HEADER */}
+      <div className="mb-8">
+        {/* BACK BUTTON */}
+        <button
+          onClick={() => router.back()}
+          className="mb-4 inline-flex items-center gap-2
+                     px-4 py-2 rounded-lg text-sm
+                     bg-gray-900 text-white
+                     hover:bg-gray-800 transition"
+        >
+          ← Back
+        </button>
 
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 capitalize">
+          {type.replace("-", " ")} EMI Customers
+        </h1>
+        <p className="text-gray-500 mt-1">
+          Track and manage customer EMI payments
+        </p>
+      </div>
+
+      {/* EMPTY STATE */}
       {emis.length === 0 ? (
-        <p className="text-gray-500">No records found</p>
+        <div className="text-center text-gray-500 mt-20">
+          No EMI records found
+        </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {emis.map((emi, idx) => (
             <div
               key={idx}
-              className="bg-white rounded-xl shadow p-5 flex justify-between items-center"
+              className="relative bg-white rounded-2xl border border-gray-100
+                         shadow-sm hover:shadow-md transition-all duration-200
+                         p-6 flex justify-between"
             >
-              {/* LEFT SECTION */}
-              <div>
-                <p className="font-semibold text-gray-800">{emi.name}</p>
+              {/* STATUS STRIP */}
+              <span
+                className={`absolute left-0 top-0 h-full w-1.5 rounded-l-2xl ${
+                  emi.status === "PAID"
+                    ? "bg-green-500"
+                    : "bg-yellow-400"
+                }`}
+              />
+
+              {/* LEFT INFO */}
+              <div className="pl-4 space-y-1">
+                <p className="text-lg font-semibold text-gray-900">
+                  {emi.name}
+                </p>
 
                 <p className="text-sm text-gray-500">
                   {emi.model} • {emi.contact}
                 </p>
 
                 <p className="text-sm text-gray-500">
-                  Due: {new Date(emi.dueDate).toDateString()}
+                  Due on{" "}
+                  <span className="font-medium text-gray-700">
+                    {new Date(emi.dueDate).toDateString()}
+                  </span>
                 </p>
 
-                {/* PAID DATE (ONLY IF PAID) */}
                 {emi.status === "PAID" && emi.paidDate && (
-                  <p className="text-sm text-green-600">
-                    Paid on: {new Date(emi.paidDate).toDateString()}
+                  <p className="text-sm font-medium text-green-600">
+                    Paid on {new Date(emi.paidDate).toDateString()}
                   </p>
                 )}
               </div>
 
               {/* RIGHT SECTION */}
-              <div className="text-right">
-                <p className="font-bold text-lg">₹{emi.amount}</p>
+              <div className="text-right flex flex-col justify-between items-end">
+                <p className="text-2xl font-bold text-gray-900">
+                  ₹{emi.amount}
+                </p>
 
                 <span
-                  className={`inline-block mt-1 text-sm px-3 py-1 rounded-full ${
+                  className={`text-xs font-semibold px-3 py-1 rounded-full mt-1 ${
                     emi.status === "PAID"
                       ? "bg-green-100 text-green-700"
                       : "bg-yellow-100 text-yellow-700"
@@ -125,15 +167,17 @@ export default function EmiListPage() {
                   {emi.status}
                 </span>
 
-                {/* MARK PAID BUTTON */}
                 {emi.status === "PENDING" && (
                   <button
-                    onClick={() => markAsPaid(emi.customerId, emi.emiIndex)}
-                    className="block mt-2 text-sm px-4 py-1.5 rounded-lg
+                    onClick={() =>
+                      markAsPaid(emi.customerId, emi.emiIndex)
+                    }
+                    className="mt-3 px-5 py-2 text-sm font-semibold rounded-xl
                                bg-green-600 text-white
-                               hover:bg-green-700 transition"
+                               hover:bg-green-700 active:scale-95
+                               transition-all"
                   >
-                    Mark Paid
+                    Mark as Paid
                   </button>
                 )}
               </div>
