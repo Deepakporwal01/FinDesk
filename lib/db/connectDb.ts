@@ -6,17 +6,19 @@ if (!MONGODB_URI) {
   throw new Error("❌ MONGODB_URI is not defined");
 }
 
-/** * Global is used here to maintain a cached connection across hot reloads in development.
- */
+// 1. Define the shape of the cache
 interface MongooseCache {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
 }
 
+// 2. Register the cache on the global object
 declare global {
+  // eslint-disable-next-line no-var
   var mongoose: MongooseCache | undefined;
 }
 
+// 3. Initialize the cache
 let cached = global.mongoose;
 
 if (!cached) {
@@ -37,15 +39,14 @@ export async function connectDB() {
     };
 
     // mongoose.connect returns Promise<typeof mongoose>
-    cached!.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      return mongoose;
-    });
+    // This now matches the MongooseCache interface defined above
+    cached!.promise = mongoose.connect(MONGODB_URI, opts);
   }
 
   try {
     cached!.conn = await cached!.promise;
   } catch (e) {
-    cached!.promise = null;
+    cached!.promise = null; // Reset promise on failure
     throw e;
   }
 
