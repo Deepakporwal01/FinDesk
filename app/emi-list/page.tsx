@@ -1,5 +1,5 @@
 "use client";
-
+export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
@@ -32,21 +32,21 @@ export default function EmiListPage() {
   /* =========================
      FETCH EMI LIST
   ========================= */
-  const fetchEmis = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/emi-list?type=${type}`);
-      const data = await res.json();
-      setEmis(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Failed to fetch EMI list", error);
-      setEmis([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchEmis = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/emi-list?type=${type}`);
+        const data = await res.json();
+        setEmis(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Failed to fetch EMI list", error);
+        setEmis([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchEmis();
   }, [type]);
 
@@ -58,7 +58,10 @@ export default function EmiListPage() {
       await fetch(`/api/customers/${customerId}/emi/${emiIndex}`, {
         method: "PUT",
       });
-      fetchEmis();
+      // Re-fetch the EMI list after marking as paid
+      const res = await fetch(`/api/emi-list?type=${type}`);
+      const data = await res.json();
+      setEmis(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to mark EMI as paid", error);
     }
