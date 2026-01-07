@@ -1,20 +1,20 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URI = process.env.MONGODB_URI!;
 
 if (!MONGODB_URI) {
   throw new Error("❌ MONGODB_URI is not defined");
 }
 
-/**
- * Global cache to prevent multiple connections in dev
+/** * Global is used here to maintain a cached connection across hot reloads in development.
  */
+interface MongooseCache {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+}
+
 declare global {
-   
-  var mongoose: {
-    conn: mongoose.Mongoose | null;
-    promise: Promise<mongoose.Mongoose> | null;
-  } | undefined;
+  var mongoose: MongooseCache | undefined;
 }
 
 let cached = global.mongoose;
@@ -32,11 +32,22 @@ export async function connectDB() {
   }
 
   if (!cached!.promise) {
-    cached!.promise = mongoose.connect(MONGODB_URI!, {
+    const opts = {
       bufferCommands: false,
+    };
+
+    // mongoose.connect returns Promise<typeof mongoose>
+    cached!.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      return mongoose;
     });
   }
 
-  cached!.conn = await cached!.promise;
+  try {
+    cached!.conn = await cached!.promise;
+  } catch (e) {
+    cached!.promise = null;
+    throw e;
+  }
+
   return cached!.conn;
 }
