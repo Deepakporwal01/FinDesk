@@ -26,6 +26,10 @@ export default function Page() {
     firstEmiDate: "",
   });
 
+  // UI-only (not sent to backend)
+  const [profileImage, setProfileImage] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+
   /* =========================
      HANDLE CHANGE
   ========================= */
@@ -35,7 +39,18 @@ export default function Page() {
   };
 
   /* =========================
-     SUBMIT FORM
+     IMAGE CHANGE (UI ONLY)
+  ========================= */
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setProfileImage(file); // only for UI
+    setPreview(URL.createObjectURL(file)); // preview only
+  };
+
+  /* =========================
+     SUBMIT FORM (JSON ONLY)
   ========================= */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +60,7 @@ export default function Page() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`, // ✅ REQUIRED
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify({
           ...formData,
@@ -53,6 +68,7 @@ export default function Page() {
           downPayment: Number(formData.downPayment),
           emiAmount: Number(formData.emiAmount),
           emiMonths: Number(formData.emiMonths),
+          // ❌ profileImage NOT sent
         }),
       });
 
@@ -100,11 +116,47 @@ export default function Page() {
     <div className="min-h-screen bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center p-4">
       <form
         onSubmit={handleSubmit}
-        className="bg-white w-full max-w-lg rounded-2xl shadow-xl p-8 space-y-5"
+        className="bg-white w-full max-w-lg rounded-2xl shadow-xl p-8 space-y-5 relative"
       >
+        {/* BACK BUTTON */}
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="absolute left-4 top-4 text-sm text-gray-600 hover:text-black"
+        >
+          ← Back
+        </button>
+
         <h2 className="text-2xl font-semibold text-center text-gray-800">
           EMI Customer Details
         </h2>
+
+        {/* PROFILE IMAGE (UI ONLY) */}
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-24 h-24 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center shadow">
+            {preview ? (
+              <img
+                src={preview}
+                alt="Profile Preview"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-xs text-gray-500">
+                No Image
+              </span>
+            )}
+          </div>
+
+          <label className="text-sm font-medium text-blue-600 cursor-pointer">
+            Upload Profile Photo
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="hidden"
+            />
+          </label>
+        </div>
 
         {/* BASIC DETAILS */}
         {[

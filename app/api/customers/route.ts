@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
 
     const user = verifyToken(req);
 
-    const customers = await Customer.find();
+    const customers = await Customer.find().sort({ createdAt: -1 });
 
     return NextResponse.json(customers, { status: 200 });
   } catch (err: any) {

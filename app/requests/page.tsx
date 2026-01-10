@@ -9,6 +9,7 @@ interface CustomerRequest {
   contact: string;
   model: string;
   imei: string;
+  address: string;
   createdAt: string;
   supplier?: string;
   supplierNumber?: string;
@@ -75,26 +76,21 @@ export default function RequestsPage() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const res = await fetch(
-        `/api/customers/${customerId}/approve`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ action }),
-        }
-      );
+      const res = await fetch(`/api/customers/${customerId}/approve`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action }),
+      });
 
       if (!res.ok) {
         alert("Action failed");
         return;
       }
 
-      setRequests((prev) =>
-        prev.filter((r) => r._id !== customerId)
-      );
+      setRequests((prev) => prev.filter((r) => r._id !== customerId));
     } finally {
       setActionLoading(null);
     }
@@ -155,24 +151,25 @@ export default function RequestsPage() {
                   <p className="text-lg font-semibold text-gray-900">
                     {c.name}
                   </p>
+                  <p className="text-lg   text-gray-900">{c.address}</p>
 
                   <p className="text-sm text-gray-600">
                     {c.model} • {c.contact}
                   </p>
 
-                  <p className="text-xs text-gray-400">
-                    IMEI: {c.imei}
-                  </p>
+                  <p className="text-xs text-gray-400">IMEI: {c.imei}</p>
+                  <p className="text-xs text-gray-400">Model: {c.model}</p>
 
                   <p className="text-xs text-gray-400">
-                    Requested on{" "}
-                    {new Date(c.createdAt).toLocaleDateString()}
+                    Requested on {new Date(c.createdAt).toLocaleDateString()}
                   </p>
 
                   {/* AGENT INFO */}
-                  <div className="mt-2 inline-flex items-center gap-2 text-xs bg-blue-50 text-blue-700 px-3 py-1 rounded-full">
-                 Agent Name: {c.supplier} Agent Number{" "}
-                    {c.supplierNumber}
+                  <div className="flex flex-col">
+                  <div className="mt-2 inline-flex items-center gap-2 text-xs bg-blue-50 text-green-700 px-3 py-1 rounded-full">
+                    Agent Name: {c.supplier}
+                  </div>
+                  <div className="mt-2 inline-flex items-center gap-2 text-xs bg-blue-50 text-green-700 px-3 py-1 rounded-full">Agent Number {c.supplierNumber}</div>
                   </div>
                 </div>
 
@@ -180,9 +177,7 @@ export default function RequestsPage() {
                 <div className="flex gap-3">
                   <button
                     disabled={actionLoading === c._id}
-                    onClick={() =>
-                      handleAction(c._id, "APPROVE")
-                    }
+                    onClick={() => handleAction(c._id, "APPROVE")}
                     className="px-5 py-2 rounded-xl bg-green-600 text-white font-medium hover:bg-green-700 disabled:opacity-50"
                   >
                     ✔ Approve
@@ -190,9 +185,7 @@ export default function RequestsPage() {
 
                   <button
                     disabled={actionLoading === c._id}
-                    onClick={() =>
-                      handleAction(c._id, "REJECT")
-                    }
+                    onClick={() => handleAction(c._id, "REJECT")}
                     className="px-5 py-2 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 disabled:opacity-50"
                   >
                     ✖ Reject

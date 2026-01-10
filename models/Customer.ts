@@ -25,6 +25,7 @@ export interface IEmi {
    CUSTOMER TYPE (UNCHANGED)
 ========================= */
 export interface ICustomer {
+  profilePic: string;
   name: string;
   fatherName?: string;
   address?: string;
@@ -101,6 +102,7 @@ const emiSchema = new Schema<IEmi>(
 const customerSchema = new Schema<ICustomer>(
   {
     name: { type: String, required: true },
+    profilePic: { type: String, default: "" },
     fatherName: String,
     address: String,
     contact: String,
