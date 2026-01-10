@@ -42,7 +42,7 @@ export default function LoginPage() {
 
       // ✅ REDIRECT BASED ON ROLE
       if (data.role === "ADMIN") {
-        router.push("/admin/dashboard");
+        router.push("/");
       } else {
         router.push("/"); // agent goes home
       }

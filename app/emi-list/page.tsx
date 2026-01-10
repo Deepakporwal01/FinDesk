@@ -15,13 +15,14 @@ interface EmiItem {
   contact: string;
   model: string;
   amount: number;
+  paidAmount: number;
   dueDate: string;
   paidDate: string | null;
-  status: "PAID" | "PENDING";
+  status: "PENDING" | "PARTIAL" | "PAID";
 }
 
 /* =========================
-   INTERNAL CONTENT COMPONENT
+   INTERNAL CONTENT
 ========================= */
 function EmiListContent() {
   const searchParams = useSearchParams();
@@ -30,54 +31,84 @@ function EmiListContent() {
 
   const [emis, setEmis] = useState<EmiItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [payAmount, setPayAmount] = useState<
+    Record<number, number | undefined>
+  >({});
 
   /* =========================
       FETCH EMI LIST
   ========================= */
-  useEffect(() => {
-    const fetchEmis = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/emi-list?type=${type}`);
-        const data = await res.json();
-        setEmis(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error("Failed to fetch EMI list", error);
-        setEmis([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchEmis = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/emi-list?type=${type}`);
+      const data = await res.json();
+      setEmis(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to fetch EMI list", err);
+      setEmis([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchEmis();
   }, [type]);
 
   /* =========================
-      MARK EMI AS PAID
+      ADD PAYMENT
   ========================= */
-  const markAsPaid = async (customerId: string, emiIndex: number) => {
+  const payEmi = async (customerId: string, emiIndex: number) => {
+    const amount = payAmount[emiIndex];
+
+    if (!amount || amount <= 0) {
+      alert("Enter valid amount");
+      return;
+    }
+
     try {
-      await fetch(`/api/customers/${customerId}/emi/${emiIndex}`, {
+      await fetch(`/api/customers/${customerId}/emi/${emiIndex}/pay`, {
         method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ amount }),
       });
-      // Re-fetch the EMI list after marking as paid
-      const res = await fetch(`/api/emi-list?type=${type}`);
-      const data = await res.json();
-      setEmis(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Failed to mark EMI as paid", error);
+
+      setPayAmount((prev) => ({
+        ...prev,
+        [emiIndex]: undefined,
+      }));
+
+      fetchEmis();
+    } catch (err) {
+      console.error("Payment failed", err);
     }
   };
 
   /* =========================
-      LOADING STATE
+      DATE HELPER
+  ========================= */
+  const isOverdue = (emi: EmiItem) => {
+    if (emi.status === "PAID") return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const due = new Date(emi.dueDate);
+    due.setHours(0, 0, 0, 0);
+
+    return due < today;
+  };
+
+  /* =========================
+      LOADING
   ========================= */
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <p className="text-gray-500 text-lg animate-pulse">
-          Loading EMI list...
-        </p>
+      <div className="min-h-screen flex items-center justify-center bg-white text-gray-700">
+        Loading EMI list...
       </div>
     );
   }
@@ -87,106 +118,154 @@ function EmiListContent() {
   ========================= */
   return (
     <div className="min-h-screen bg-white px-4 sm:px-6 py-8">
-      
       {/* HEADER */}
       <div className="mb-8">
         <button
           onClick={() => router.back()}
-          className="mb-4 inline-flex items-center gap-2
-                     px-4 py-2 rounded-lg text-sm
-                     bg-gray-900 text-white
-                     hover:bg-gray-800 transition"
+          className="mb-4 px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-gray-800"
         >
           ← Back
         </button>
 
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 capitalize">
+        <h1 className="text-3xl font-bold text-gray-900 capitalize">
           {type.replace("-", " ")} EMI Customers
         </h1>
-        <p className="text-gray-500 mt-1">
-          Track and manage customer EMI payments
-        </p>
       </div>
 
-      {/* EMPTY STATE */}
       {emis.length === 0 ? (
-        <div className="text-center text-gray-500 mt-20">
+        <div className="text-center text-gray-600 mt-20">
           No EMI records found
         </div>
       ) : (
         <div className="space-y-5">
-          {emis.map((emi, idx) => (
-            <div
-              key={idx}
-              className="relative bg-white rounded-2xl border border-gray-100
-                         shadow-sm hover:shadow-md transition-all duration-200
-                         p-6 flex justify-between"
-            >
-              {/* STATUS STRIP */}
-              <span
-                className={`absolute left-0 top-0 h-full w-1.5 rounded-l-2xl ${
-                  emi.status === "PAID"
-                    ? "bg-green-500"
-                    : "bg-yellow-400"
+          {emis.map((emi) => {
+            const remaining = emi.amount - emi.paidAmount;
+            const overdue = isOverdue(emi);
+
+            return (
+              <div
+                key={`${emi.customerId}-${emi.emiIndex}`}   // ✅ FIXED KEY
+                className={`relative rounded-2xl border border-gray-200 shadow-sm p-6 flex justify-between ${
+                  overdue ? "bg-red-50" : "bg-white"
                 }`}
-              />
-
-              {/* LEFT INFO */}
-              <div className="pl-4 space-y-1">
-                <p className="text-lg font-semibold text-gray-900">
-                  {emi.name}
-                </p>
-
-                <p className="text-sm text-gray-500">
-                  {emi.model} • {emi.contact}
-                </p>
-
-                <p className="text-sm text-gray-500">
-                  Due on{" "}
-                  <span className="font-medium text-gray-700">
-                    {new Date(emi.dueDate).toDateString()}
-                  </span>
-                </p>
-
-                {emi.status === "PAID" && emi.paidDate && (
-                  <p className="text-sm font-medium text-green-600">
-                    Paid on {new Date(emi.paidDate).toDateString()}
-                  </p>
-                )}
-              </div>
-
-              {/* RIGHT SECTION */}
-              <div className="text-right flex flex-col justify-between items-end">
-                <p className="text-2xl font-bold text-gray-900">
-                  ₹{emi.amount}
-                </p>
-
+              >
+                {/* STATUS STRIP */}
                 <span
-                  className={`text-xs font-semibold px-3 py-1 rounded-full mt-1 ${
+                  className={`absolute left-0 top-0 h-full w-1.5 rounded-l-2xl ${
                     emi.status === "PAID"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-yellow-100 text-yellow-700"
+                      ? "bg-green-500"
+                      : overdue
+                      ? "bg-red-500"
+                      : emi.status === "PARTIAL"
+                      ? "bg-blue-500"
+                      : "bg-yellow-400"
                   }`}
-                >
-                  {emi.status}
-                </span>
+                />
 
-                {emi.status === "PENDING" && (
-                  <button
-                    onClick={() =>
-                      markAsPaid(emi.customerId, emi.emiIndex)
-                    }
-                    className="mt-3 px-5 py-2 text-sm font-semibold rounded-xl
-                               bg-green-600 text-white
-                               hover:bg-green-700 active:scale-95
-                               transition-all"
+                {/* LEFT */}
+                <div className="pl-4 space-y-1">
+                  <p className="text-lg font-semibold text-gray-900">
+                    {emi.name}
+                  </p>
+
+                  <p className="text-sm text-gray-700">
+                    {emi.model} • {emi.contact}
+                  </p>
+
+                  <p className="text-sm text-gray-800">
+                    Due: {new Date(emi.dueDate).toDateString()}
+                  </p>
+
+                  {overdue && (
+                    <p className="text-xs font-semibold text-red-600">
+                      ⚠ OVERDUE
+                    </p>
+                  )}
+
+                  {emi.status !== "PENDING" && (
+                    <p className="text-sm text-green-600">
+                      Paid ₹{emi.paidAmount}
+                    </p>
+                  )}
+
+                  {emi.status === "PAID" && emi.paidDate && (
+                    <p className="text-sm text-green-700">
+                      Completed on{" "}
+                      {new Date(emi.paidDate).toDateString()}
+                    </p>
+                  )}
+
+                  {emi.status !== "PAID" && (
+                    <p className="text-xs text-red-600">
+                      Remaining ₹{remaining}
+                    </p>
+                  )}
+                </div>
+
+                {/* RIGHT */}
+                <div className="text-right flex flex-col gap-3 items-end">
+                  <p className="text-xl font-bold text-gray-900">
+                    ₹{emi.amount}
+                  </p>
+
+                  <span
+                    className={`text-xs px-3 py-1 rounded-full font-medium ${
+                      emi.status === "PAID"
+                        ? "bg-green-100 text-green-700"
+                        : overdue
+                        ? "bg-red-100 text-red-700"
+                        : emi.status === "PARTIAL"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-yellow-100 text-yellow-700"
+                    }`}
                   >
-                    Mark as Paid
-                  </button>
-                )}
+                    {overdue ? "OVERDUE" : emi.status}
+                  </span>
+
+                  {emi.status !== "PAID" && (
+                    <>
+                      <input
+                        type="number"
+                        placeholder={`Remaining ₹${remaining}`}
+                        value={payAmount[emi.emiIndex] ?? ""}
+                        onChange={(e) =>
+                          setPayAmount((prev) => ({
+                            ...prev,
+                            [emi.emiIndex]:
+                              e.target.value === ""
+                                ? undefined
+                                : Number(e.target.value),
+                          }))
+                        }
+                        className="
+                          w-36 px-3 py-2 rounded-lg
+                          border border-gray-300
+                          bg-white
+                          text-sm text-gray-900
+                          placeholder:text-gray-500
+                          focus:outline-none
+                          focus:ring-2 focus:ring-gray-900/20
+                          appearance-none
+                          [&::-webkit-inner-spin-button]:appearance-none
+                          [&::-webkit-outer-spin-button]:appearance-none
+                          [-moz-appearance:textfield]
+                        "
+                      />
+
+                      <button
+                        onClick={() =>
+                          payEmi(emi.customerId, emi.emiIndex)
+                        }
+                        className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-900 text-white hover:bg-gray-800"
+                      >
+                        Pay Now
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -194,15 +273,11 @@ function EmiListContent() {
 }
 
 /* =========================
-   MAIN EXPORT (WITH SUSPENSE)
+   EXPORT
 ========================= */
 export default function EmiListPage() {
   return (
-    <Suspense fallback={
-        <div className="min-h-screen flex items-center justify-center bg-white">
-            <p className="text-gray-500 text-lg animate-pulse">Loading...</p>
-        </div>
-    }>
+    <Suspense fallback={<div className="p-6">Loading...</div>}>
       <EmiListContent />
     </Suspense>
   );

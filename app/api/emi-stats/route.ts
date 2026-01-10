@@ -12,6 +12,7 @@ export async function GET(req: Request) {
     let pendingEmis = 0;
     let paidEmis = 0;
     let dueToday = 0;
+    let overdueEmis = 0; // ✅ ADDED
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -20,19 +21,32 @@ export async function GET(req: Request) {
       customer.emis?.forEach((emi: any) => {
         totalEmis++;
 
-        if (emi.status === "PENDING") {
+        const dueDate = new Date(emi.dueDate);
+        dueDate.setHours(0, 0, 0, 0);
+
+        const isPaid = emi.status === "PAID";
+        const isPending =
+          emi.status === "PENDING" || emi.status === "PARTIAL";
+        const isOverdue = !isPaid && dueDate < today;
+
+        // ✅ PAID
+        if (isPaid) {
+          paidEmis++;
+        }
+
+        // ✅ PENDING (includes PARTIAL)
+        if (isPending) {
           pendingEmis++;
 
-          const dueDate = new Date(emi.dueDate);
-          dueDate.setHours(0, 0, 0, 0);
-
+          // DUE TODAY
           if (dueDate.getTime() === today.getTime()) {
             dueToday++;
           }
         }
 
-        if (emi.status === "PAID") {
-          paidEmis++;
+        // ✅ OVERDUE
+        if (isOverdue) {
+          overdueEmis++;
         }
       });
     });
@@ -43,6 +57,7 @@ export async function GET(req: Request) {
         pendingEmis,
         paidEmis,
         dueToday,
+        overdueEmis, // ✅ RETURNED
       },
       { status: 200 }
     );

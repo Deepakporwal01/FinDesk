@@ -1,16 +1,24 @@
 "use client";
+
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function Page() {
   const router = useRouter();
 
+  /* =========================
+     FORM STATE
+  ========================= */
   const [formData, setFormData] = useState({
     name: "",
     fatherName: "",
+    address: "",
     contact: "",
     model: "",
     imei: "",
+    alternateNumber: "",
+    supplier: "",
+    supplierNumber: "",
     price: "",
     downPayment: "",
     emiAmount: "",
@@ -18,42 +26,53 @@ export default function Page() {
     firstEmiDate: "",
   });
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+  /* =========================
+     HANDLE CHANGE
+  ========================= */
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (
-    e: React.FormEvent
-  ) => {
+  /* =========================
+     SUBMIT FORM
+  ========================= */
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const res = await fetch("/api/customers", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...formData,
-        price: Number(formData.price),
-        downPayment: Number(formData.downPayment),
-        emiAmount: Number(formData.emiAmount),
-        emiMonths: Number(formData.emiMonths),
-      }),
-    });
+    try {
+      const res = await fetch("/api/customers", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`, // ✅ REQUIRED
+        },
+        body: JSON.stringify({
+          ...formData,
+          price: Number(formData.price),
+          downPayment: Number(formData.downPayment),
+          emiAmount: Number(formData.emiAmount),
+          emiMonths: Number(formData.emiMonths),
+        }),
+      });
 
-    if (res.ok) {
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Error adding customer");
+        return;
+      }
+
       alert("Customer added successfully");
       router.push("/");
-    } else {
-      alert("Error adding customer");
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong");
     }
   };
 
   /* =========================
-     EMI PREVIEW (ADMIN CONFIDENCE)
+     EMI PREVIEW
   ========================= */
   const previewEmis = () => {
     if (
@@ -93,21 +112,22 @@ export default function Page() {
           { name: "fatherName", label: "Father's Name" },
           { name: "address", label: "Address" },
           { name: "contact", label: "Contact Number" },
+          { name: "alternateNumber", label: "Alternate Number" },
           { name: "model", label: "Phone Model" },
-          { name: "imei", label: "IMEI Number/Serial Number" },
-          { name: "alternate number", label: "Alternate Number" },
+          { name: "imei", label: "IMEI / Serial Number" },
           { name: "supplier", label: "Supplier" },
-          { name: "suppliernumber", label: "Supplier Number" },
+          { name: "supplierNumber", label: "Supplier Number" },
         ].map((f) => (
           <Input
             key={f.name}
-            {...f}
+            name={f.name}
+            label={f.label}
             value={formData[f.name as keyof typeof formData]}
             onChange={handleChange}
           />
         ))}
 
-        {/* FINANCE */}
+        {/* FINANCIAL DETAILS */}
         <Input
           name="price"
           label="Price (₹)"
@@ -150,15 +170,12 @@ export default function Page() {
 
         {/* EMI PREVIEW */}
         {previewEmis().length > 0 && (
-          <div className="bg-black p-4 rounded-xl text-sm">
+          <div className="bg-gray-900 text-white p-4 rounded-xl text-sm">
             <p className="font-semibold mb-2">
               EMI Schedule Preview
             </p>
             {previewEmis().map((emi, i) => (
-              <div
-                key={i}
-                className="flex justify-between"
-              >
+              <div key={i} className="flex justify-between">
                 <span>Month {i + 1}</span>
                 <span>
                   ₹{emi.amount} –{" "}
@@ -169,8 +186,8 @@ export default function Page() {
           </div>
         )}
 
+        {/* SUBMIT */}
         <button
-      
           type="submit"
           className="w-full mt-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:opacity-90 transition"
         >
@@ -182,12 +199,17 @@ export default function Page() {
 }
 
 /* =========================
-   REUSABLE INPUT
+   REUSABLE INPUT COMPONENT
 ========================= */
 function Input({
   label,
+  value,
   ...props
-}: any) {
+}: {
+  label: string;
+  value: string | number;
+  [key: string]: any;
+}) {
   return (
     <div className="flex flex-col gap-1">
       <label className="text-sm text-gray-600">
@@ -195,6 +217,7 @@ function Input({
       </label>
       <input
         {...props}
+        value={value ?? ""}
         className="border text-black rounded-lg px-4 py-2
                    focus:outline-none focus:ring-2 focus:ring-blue-500"
       />

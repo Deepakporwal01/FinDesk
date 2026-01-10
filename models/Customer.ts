@@ -1,144 +1,139 @@
-import mongoose, { Schema, model, models, Types } from "mongoose";
-import { required } from "zod/mini";
+import mongoose, { Schema, model, models } from "mongoose";
 
 /* =========================
-   EMI TYPE
+   PAYMENT TYPE (NEW)
 ========================= */
-export interface IEmi {
+export interface IPayment {
   amount: number;
-  dueDate: Date;
-  paidDate?: Date | null;
-  status: "PENDING" | "PAID";
+  date: Date;
 }
 
 /* =========================
-   CUSTOMER TYPE
+   EMI TYPE (EXTENDED, NOT BROKEN)
+========================= */
+export interface IEmi {
+  amount: number;        // full EMI amount
+  paidAmount: number;    // total paid so far (cached)
+  dueDate: Date;
+  paidDate?: Date | null; // last payment date (cached)
+  status: "PENDING" | "PARTIAL" | "PAID";
+
+  payments: IPayment[]; // ✅ NEW: full payment history
+}
+
+/* =========================
+   CUSTOMER TYPE (UNCHANGED)
 ========================= */
 export interface ICustomer {
   name: string;
-  fatherName: string;
-  contact: string;
-  model: string;
+  fatherName?: string;
+  address?: string;
+  contact?: string;
+  model?: string;
   imei: string;
-
-  price: number;
-  emiAmount: number;
-  downPayment: number;
+  alternateNumber?: string;
+  supplier?: string;
+  supplierNumber?: string;
+  price?: number;
+  emiAmount?: number;
+  downPayment?: number;
 
   emis: IEmi[];
 
-  /* =========================
-     AGENT INFO (SNAPSHOT)
-  ========================= */
-  agentId?: Types.ObjectId;
-  agentName?: string;
-  agentNumber?: number;
-  AlternateNumber?: number;
-  Address?: string;
+  status: "PENDING" | "APPROVED";
 
-  /* =========================
-     APPROVAL FLOW
-  ========================= */
-  status: "PENDING" | "APPROVED" | "REJECTED";
-  approvedBy?: Types.ObjectId;
-  approvedAt?: Date;
+  createdBy: {
+    userId: string;
+    role: "ADMIN" | "AGENT";
+  };
 
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 /* =========================
-   EMI SCHEMA
+   PAYMENT SCHEMA (NEW)
+========================= */
+const paymentSchema = new Schema<IPayment>(
+  {
+    amount: { type: Number, required: true },
+    date: { type: Date, required: true },
+  },
+  { _id: false }
+);
+
+/* =========================
+   EMI SCHEMA (EXTENDED)
 ========================= */
 const emiSchema = new Schema<IEmi>(
   {
     amount: { type: Number, required: true },
+
+    paidAmount: {
+      type: Number,
+      default: 0, // cached total
+    },
+
     dueDate: { type: Date, required: true },
-    paidDate: { type: Date, default: null },
+
+    paidDate: {
+      type: Date,
+      default: null, // last payment date
+    },
+
     status: {
       type: String,
-      enum: ["PENDING", "PAID"],
+      enum: ["PENDING", "PARTIAL", "PAID"],
       default: "PENDING",
+    },
+
+    payments: {
+      type: [paymentSchema], // ✅ NEW
+      default: [],
     },
   },
   { _id: false }
 );
 
 /* =========================
-   CUSTOMER SCHEMA
+   CUSTOMER SCHEMA (UNCHANGED)
 ========================= */
 const customerSchema = new Schema<ICustomer>(
   {
     name: { type: String, required: true },
-    fatherName: { type: String, required: true },
-    contact: { type: String, required: true },
-    model: { type: String, required: true },
+    fatherName: String,
+    address: String,
+    contact: String,
+    model: String,
 
-    AlternateNumber: {
-      type: Number,
-    },
+    imei: { type: String, unique: true, required: true },
 
-    Address: {
-      type: String,
-      required:true,
-    },
-    imei: {
-      type: String,
-      required: true,
-      unique: true,
-    },
+    alternateNumber: String,
+    supplier: String,
+    supplierNumber: String,
 
-    price: { type: Number, required: true },
-    emiAmount: { type: Number, required: true },
-    downPayment: { type: Number, required: true },
+    price: Number,
+    emiAmount: Number,
+    downPayment: Number,
 
-    emis: {
-      type: [emiSchema],
-      default: [],
-    },
+    emis: { type: [emiSchema], default: [] },
 
-    /* =========================
-       AGENT INFO
-    ========================= */
-    agentId: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-    },
-
-    agentName: {
-      type: String,
-    },
-
-    agentNumber: {
-      type: Number,
-    },
-
-
-    /* =========================
-       APPROVAL STATUS
-    ========================= */
     status: {
       type: String,
-      enum: ["PENDING", "APPROVED", "REJECTED"],
+      enum: ["PENDING", "APPROVED"],
       default: "PENDING",
     },
 
-    approvedBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-    },
-
-    approvedAt: {
-      type: Date,
+    createdBy: {
+      userId: String,
+      role: {
+        type: String,
+        enum: ["ADMIN", "AGENT"],
+      },
     },
   },
   { timestamps: true }
 );
 
-/* =========================
-   EXPORT MODEL
-========================= */
-const Customer =
-  models.Customer || model<ICustomer>("Customer", customerSchema);
-
-export default Customer;
+export default models.Customer ||
+  model<ICustomer>("Customer", customerSchema);

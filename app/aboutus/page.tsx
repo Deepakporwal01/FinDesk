@@ -30,7 +30,7 @@ export default function AboutUs() {
 
         {/* CONTENT CARD */}
         <div className="mt-12 bg-white rounded-2xl shadow-lg border border-gray-100 p-8 space-y-6">
-          <p className="text-gray-700 leading-relaxed text-lg">
+          <p className="text-gray-700 leading-relaxed text-lg ">
             <span className="font-semibold">Porwal Mobile</span> is a trusted mobile
             shop located at <span className="font-medium">Punjabi Colony Road, Bhanpura</span>,
             offering all major smartphone brands with easy EMI facilities.
@@ -58,7 +58,7 @@ export default function AboutUs() {
           </div>
 
           <div className="pt-6 border-t">
-            <h2 className="text-xl font-semibold">Owner</h2>
+            <h2 className="text-xl text-black font-semibold">Owner</h2>
             <p className="mt-2 text-gray-700">
               <span className="font-medium">Pawan Porwal</span> – serving customers with trust and care.
             </p>
