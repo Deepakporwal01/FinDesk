@@ -1,16 +1,25 @@
-import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/db/connectDb";
+import { NextRequest, NextResponse } from "next/server";
 import Customer from "@/models/Customer";
+import { connectDB } from "@/lib/db/connectDb";
+import { verifyToken } from "@/lib/db/auth/verifyToken";
 
+/* ======================
+   GET → FETCH SINGLE CUSTOMER
+====================== */
 export async function GET(
-  req: Request,
-  context: { params:Promise<{ id: string }> }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
-    const {id}= await context.params;
+
+    verifyToken(req);
+
+    // ✅ FIX: await params
+    const { id } = await params;
+
     const customer = await Customer.findById(id);
-    
+
     if (!customer) {
       return NextResponse.json(
         { error: "Customer not found" },
@@ -18,10 +27,56 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(customer);
-  } catch (error: any) {
+    return NextResponse.json(customer, { status: 200 });
+  } catch (err: any) {
+    console.error("❌ GET BY ID ERROR:", err);
     return NextResponse.json(
-      { error: error.message },
+      { error: err.message || "Failed to fetch customer" },
+      { status: 500 }
+    );
+  }
+}
+
+/* ======================
+   DELETE → REMOVE CUSTOMER
+====================== */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    await connectDB();
+
+    const user = verifyToken(req);
+
+    //ADMIN CHECK
+    if (user.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 403 }
+      );
+    }
+
+    // ✅ FIX: await params
+    const { id } = await params;
+
+    const customer = await Customer.findByIdAndDelete(id);
+
+    if (!customer) {
+      return NextResponse.json(
+        { error: "Customer not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(
+      { message: "Customer deleted successfully" },
+      { status: 200 }
+    );
+  } catch (err: any) {
+    console.error("❌ DELETE ERROR:", err);
+    return NextResponse.json(
+      { error: err.message || "Failed to delete customer" },
       { status: 500 }
     );
   }

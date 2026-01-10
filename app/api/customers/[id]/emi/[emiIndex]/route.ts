@@ -72,3 +72,61 @@ export async function PUT(
     );
   }
 }
+
+/**
+ * DELETE EMI
+ * DELETE /api/customers/:id/emi/:emiIndex
+ */
+export async function DELETE(
+  req: Request,
+  context: { params: Promise<{ id: string; emiIndex: string }> }
+) {
+  try {
+    await connectDB();
+
+    // ✅ params are STRINGS → must await + parse
+    const { id, emiIndex } = await context.params;
+    const index = Number(emiIndex);
+
+    if (Number.isNaN(index)) {
+      return NextResponse.json(
+        { error: "Invalid EMI index" },
+        { status: 400 }
+      );
+    }
+
+    // 1️⃣ Find customer
+    const customer = await Customer.findById(id);
+
+    if (!customer) {
+      return NextResponse.json(
+        { error: "Customer not found" },
+        { status: 404 }
+      );
+    }
+
+    // 2️⃣ Validate EMI index
+    if (!customer.emis || !customer.emis[index]) {
+      return NextResponse.json(
+        { error: "EMI not found" },
+        { status: 404 }
+      );
+    }
+
+    // 3️⃣ Remove EMI
+    customer.emis.splice(index, 1);
+
+    // 4️⃣ Save
+    await customer.save();
+
+    return NextResponse.json(
+      { message: "EMI deleted successfully" },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500 }
+    );
+  }
+}

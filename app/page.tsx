@@ -229,29 +229,45 @@ export default function Home() {
       {/* ================= DASHBOARD ================= */}
       {role === "ADMIN" && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <DashboardCard title="Total EMIs" value={stats?.totalEmis ?? "--"} />
-          <DashboardCard
-            title="Paid EMIs"
-            value={stats?.paidEmis ?? "--"}
-            color="green"
-          />
-          <DashboardCard
-            title="Pending EMIs"
-            value={stats?.pendingEmis ?? "--"}
-            color="yellow"
-          />
-          <DashboardCard
-            title="Due Today"
-            value={stats?.dueToday ?? "--"}
-            color="red"
-          />
-          <Link href="/emi-list?type=overdue">
-            <DashboardCard
-              title="Overdue EMIs"
-              value={stats?.overdueEmis ?? "--"}
-              color="overdue"
-            />
-          </Link>
+         <Link href="/emi-list?type=total">
+        <DashboardCard
+          title="Total EMIs"
+          value={stats?.totalEmis ?? "--"}
+        />
+      </Link>
+
+      <Link href="/emi-list?type=paid">
+        <DashboardCard
+          title="Paid EMIs"
+          value={stats?.paidEmis ?? "--"}
+          color="green"
+        />
+      </Link>
+
+      <Link href="/emi-list?type=pending">
+        <DashboardCard
+          title="Pending EMIs"
+          value={stats?.pendingEmis ?? "--"}
+          color="yellow"
+        />
+      </Link>
+
+      <Link href="/emi-list?type=due-today">
+        <DashboardCard
+          title="Due Today"
+          value={stats?.dueToday ?? "--"}
+          color="red"
+        />
+      </Link>
+
+      {/* ✅ OVERDUE CARD */}
+      <Link href="/emi-list?type=overdue">
+        <DashboardCard
+          title="Overdue EMIs"
+          value={stats?.overdueEmis ?? "--"}
+          color="overdue"
+        />
+      </Link>
         </section>
       )}
       {/* ================= HERO ================= */}

@@ -1,12 +1,42 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import Customer from "@/models/Customer";
 import { connectDB } from "@/lib/db/connectDb";
 import { verifyToken } from "@/lib/db/auth/verifyToken";
 
-export async function POST(req: Request) {
+/* ======================
+   GET → FETCH CUSTOMERS
+====================== */
+export async function GET(req: NextRequest) {
   try {
+    
+
     await connectDB();
+
     const user = verifyToken(req);
+
+    const customers = await Customer.find();
+
+    return NextResponse.json(customers, { status: 200 });
+  } catch (err: any) {
+    console.error("❌ GET ERROR:", err);
+    return NextResponse.json(
+      { error: err.message || "Failed to fetch customers" },
+      { status: 500 }
+    );
+  }
+}
+
+/* ======================
+   POST → CREATE CUSTOMER
+====================== */
+export async function POST(req: NextRequest) {
+  try {
+    console.log("✅ POST /api/customers HIT");
+
+    await connectDB();
+
+    const user = verifyToken(req);
+
     const body = await req.json();
 
     const {
@@ -67,9 +97,13 @@ export async function POST(req: Request) {
         role: user.role,
       },
     });
- console.log(customer)
+
     return NextResponse.json(customer, { status: 201 });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("❌ POST ERROR:", err);
+    return NextResponse.json(
+      { error: err.message || "Failed to create customer" },
+      { status: 500 }
+    );
   }
 }

@@ -34,6 +34,7 @@ function EmiListContent() {
   const [payAmount, setPayAmount] = useState<
     Record<number, number | undefined>
   >({});
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   /* =========================
       FETCH EMI LIST
@@ -85,6 +86,29 @@ function EmiListContent() {
       fetchEmis();
     } catch (err) {
       console.error("Payment failed", err);
+    }
+  };
+
+  /* =========================
+      DELETE EMI
+  ========================= */
+  const deleteEmi = async (customerId: string, emiIndex: number) => {
+    const ok = window.confirm("Delete this EMI?");
+    if (!ok) return;
+
+    try {
+      setDeleting(`${customerId}-${emiIndex}`);
+      await fetch(`/api/customers/${customerId}/emi/${emiIndex}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      fetchEmis();
+    } catch (err) {
+      console.error("Delete EMI failed", err);
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -144,7 +168,7 @@ function EmiListContent() {
 
             return (
               <div
-                key={`${emi.customerId}-${emi.emiIndex}`}   // ✅ FIXED KEY
+                key={`${emi.customerId}-${emi.emiIndex}`}
                 className={`relative rounded-2xl border border-gray-200 shadow-sm p-6 flex justify-between ${
                   overdue ? "bg-red-50" : "bg-white"
                 }`}
@@ -161,6 +185,8 @@ function EmiListContent() {
                       : "bg-yellow-400"
                   }`}
                 />
+
+                {/* DELETE BUTTON (ADDED) */}
 
                 {/* LEFT */}
                 <div className="pl-4 space-y-1">
@@ -190,8 +216,7 @@ function EmiListContent() {
 
                   {emi.status === "PAID" && emi.paidDate && (
                     <p className="text-sm text-green-700">
-                      Completed on{" "}
-                      {new Date(emi.paidDate).toDateString()}
+                      Completed on {new Date(emi.paidDate).toDateString()}
                     </p>
                   )}
 
@@ -239,10 +264,10 @@ function EmiListContent() {
                         }
                         className="
                           w-36 px-3 py-2 rounded-lg
-                          border border-gray-300
+                          border border-black
                           bg-white
-                          text-sm text-gray-900
-                          placeholder:text-gray-500
+                          text-sm text-black
+                          placeholder:text-red-500
                           focus:outline-none
                           focus:ring-2 focus:ring-gray-900/20
                           appearance-none
@@ -253,15 +278,21 @@ function EmiListContent() {
                       />
 
                       <button
-                        onClick={() =>
-                          payEmi(emi.customerId, emi.emiIndex)
-                        }
-                        className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-900 text-white hover:bg-gray-800"
+                        onClick={() => payEmi(emi.customerId, emi.emiIndex)}
+                        className="px-4 py-2 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-800"
                       >
                         Pay Now
                       </button>
                     </>
                   )}
+                  <button
+                    onClick={() => deleteEmi(emi.customerId, emi.emiIndex)}
+                    disabled={deleting === `${emi.customerId}-${emi.emiIndex}`}
+                    className="  text-red-300 hover:text-red-600 text-sm border border-red-300 hover:border-red-600 p-1 cursor-pointer "
+                    title="Delete EMI"
+                  >
+                    Remove
+                  </button>
                 </div>
               </div>
             );
