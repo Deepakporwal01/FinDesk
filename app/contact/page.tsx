@@ -56,7 +56,7 @@ export default function ContactUs() {
                 href="tel:9754813627"
                 className="text-lg font-medium text-green-600 hover:underline"
               >
-                9754813627
+               7024436277
               </a>
             </div>
 

@@ -388,7 +388,7 @@ export default function Home() {
                     href="tel:9754813627"
                     className="text-green-600 hover:underline"
                   >
-                    9754813627
+                   7024436277
                   </a>
                 </li>
                 <li>
