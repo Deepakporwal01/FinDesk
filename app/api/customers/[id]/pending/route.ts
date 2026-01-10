@@ -5,7 +5,7 @@ import { verifyToken } from "@/lib/db/auth/verifyToken";
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
@@ -18,7 +18,7 @@ export async function PUT(
       );
     }
 
-    const { id } = params;
+    const { id } = await context.params;
 
     const customer = await Customer.findById(id);
     if (!customer) {
