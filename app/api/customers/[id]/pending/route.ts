@@ -1,17 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import Customer from "@/models/Customer";
 import { connectDB } from "@/lib/db/connectDb";
 import { verifyToken } from "@/lib/db/auth/verifyToken";
 
 export async function PUT(
-  req: Request,
-  context: { params: Promise<{ id: string }> }
+  req: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
     await connectDB();
 
     const user = verifyToken(req);
-
     if (user.role !== "ADMIN") {
       return NextResponse.json(
         { error: "Unauthorized" },
@@ -19,7 +18,7 @@ export async function PUT(
       );
     }
 
-    const { id } = await context.params;
+    const { id } = params;
 
     const customer = await Customer.findById(id);
     if (!customer) {
