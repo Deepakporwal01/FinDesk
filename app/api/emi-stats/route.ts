@@ -6,7 +6,7 @@ export async function GET() {
   try {
     await connectDB();
 
-    const customers = await Customer.find();
+    const customers = await Customer.find({status: "APPROVED"});
 
     let totalEmis = 0;
     let pendingEmis = 0;

@@ -12,7 +12,7 @@ export async function GET(req: Request) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const customers = await Customer.find();
+    const customers = await Customer.find({status: "APPROVED"});
     const result: any[] = [];
 
     customers.forEach((customer) => {

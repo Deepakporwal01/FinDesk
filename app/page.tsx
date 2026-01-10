@@ -115,6 +115,12 @@ export default function Home() {
                 >
                   Dashboard
                 </Link>
+                <Link
+                  href="/requests"
+                  className="border px-4 py-2 rounded-lg text-black"
+                >
+                 Requests
+                </Link>
               </>
             )}
 
@@ -204,6 +210,15 @@ export default function Home() {
                   >
                     Dashboard
                   </Link>
+                  <Link
+                    href="/requests"
+                    onClick={() => setMenuOpen(false)}
+                    className="border px-4 py-2 rounded-lg text-center text-black"
+                  >
+                   Requests
+                  </Link>
+                   
+
                 </>
               )}
 
