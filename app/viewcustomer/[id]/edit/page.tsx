@@ -3,11 +3,31 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
+/* ================= TYPES ================= */
+
+interface CustomerForm {
+  name: string;
+  fatherName: string;
+  contact: string;
+  alternateNumber?: string;
+  address?: string;
+  model?: string;
+
+  supplier?: string;
+  supplierNumber?: string;
+
+  price: number;
+  downPayment: number;
+  emiAmount: number;
+}
+
+/* ================= PAGE ================= */
+
 export default function EditCustomer() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
 
-  const [form, setForm] = useState<any>(null);
+  const [form, setForm] = useState<CustomerForm | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,11 +43,14 @@ export default function EditCustomer() {
       setLoading(false);
     };
 
-    fetchCustomer();
+    if (id) fetchCustomer();
   }, [id]);
 
-  const updateField = (key: string, value: any) => {
-    setForm((prev: any) => ({ ...prev, [key]: value }));
+  const updateField = <K extends keyof CustomerForm>(
+    key: K,
+    value: CustomerForm[K]
+  ) => {
+    setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
   };
 
   const handleSave = async () => {
@@ -45,7 +68,7 @@ export default function EditCustomer() {
     router.push(`/viewcustomer/${id}`);
   };
 
-  if (loading) {
+  if (loading || !form) {
     return (
       <div className="min-h-screen flex items-center justify-center text-slate-500">
         Loading...
@@ -89,9 +112,21 @@ export default function EditCustomer() {
 
         {/* PAYMENT */}
         <Section title="Payment">
-          <Input label="Price" value={form.price} onChange={(v) => updateField("price", Number(v))} />
-          <Input label="Down Payment" value={form.downPayment} onChange={(v) => updateField("downPayment", Number(v))} />
-          <Input label="Monthly EMI" value={form.emiAmount} onChange={(v) => updateField("emiAmount", Number(v))} />
+          <Input
+            label="Price"
+            value={String(form.price)}
+            onChange={(v) => updateField("price", Number(v))}
+          />
+          <Input
+            label="Down Payment"
+            value={String(form.downPayment)}
+            onChange={(v) => updateField("downPayment", Number(v))}
+          />
+          <Input
+            label="Monthly EMI"
+            value={String(form.emiAmount)}
+            onChange={(v) => updateField("emiAmount", Number(v))}
+          />
         </Section>
 
         {/* SAVE */}
@@ -108,9 +143,15 @@ export default function EditCustomer() {
   );
 }
 
-/* ======= UI HELPERS (NO DESIGN CHANGE) ======= */
+/* ================= UI HELPERS ================= */
 
-function Section({ title, children }: any) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="border text-black border-black rounded-xl p-6">
       <h2 className="text-lg font-semibold mb-4">{title}</h2>
@@ -119,14 +160,20 @@ function Section({ title, children }: any) {
   );
 }
 
-function Input({ label, value, onChange }: any) {
+interface InputProps {
+  label: string;
+  value?: string;
+  onChange: (value: string) => void;
+}
+
+function Input({ label, value = "", onChange }: InputProps) {
   return (
     <div>
       <label className="text-xs uppercase text-slate-500">
         {label}
       </label>
       <input
-        value={value || ""}
+        value={value}
         onChange={(e) => onChange(e.target.value)}
         className="mt-1 w-full border border-slate-300
                    rounded-lg px-3 py-2 text-black"
