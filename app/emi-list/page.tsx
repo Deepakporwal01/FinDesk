@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+ import Link from "next/link";
 
 /* =========================
    TYPES
@@ -173,7 +174,9 @@ function EmiListContent() {
             const overdue = isOverdue(emi);
 
             return (
-              <div
+              
+              <Link
+              href={`/viewcustomer/${emi.customerId}`}
                 key={`${emi.customerId}-${emi.emiIndex}`}
                 className={`relative rounded-2xl border border-gray-200 shadow-sm p-6 flex justify-between ${
                   overdue ? "bg-red-50" : "bg-white"
@@ -284,7 +287,8 @@ function EmiListContent() {
                     </>
                   )}
                 </div>
-              </div>
+              </Link>
+              
             );
           })}
         </div>

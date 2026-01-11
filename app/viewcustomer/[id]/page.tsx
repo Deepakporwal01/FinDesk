@@ -31,8 +31,8 @@ interface Customer {
   model: string;
   imei: string;
 
-  supplier?: string;        // ✅ Agent Name
-  supplierNumber?: string;  // ✅ Agent Contact
+  supplier?: string;
+  supplierNumber?: string;
 
   price: number;
   downPayment: number;
@@ -99,6 +99,15 @@ export default function CustomerDetails() {
             ← Back
           </button>
 
+          {/* ✅ EDIT BUTTON (ONLY ADDITION) */}
+          <button
+            onClick={() => router.push(`/viewcustomer/${customer._id}/edit/`)}
+            className="px-4 py-2 rounded-lg border border-slate-300
+                       text-slate-700 hover:bg-slate-100 transition"
+          >
+            Edit
+          </button>
+
           <div
             className="h-20 w-20 rounded-2xl overflow-hidden
                        border border-slate-300 bg-slate-100
@@ -132,11 +141,8 @@ export default function CustomerDetails() {
           <Info label="Father Name" value={customer.fatherName} />
           <Info label="Contact" value={customer.contact} />
           <Info label="Alternate Number" value={customer.alternateNumber} />
-
-          {/* ✅ AGENT DETAILS ADDED */}
           <Info label="Agent Name" value={customer.supplier} />
           <Info label="Agent Contact" value={customer.supplierNumber} />
-
           <Info label="Address" value={customer.address} />
           <Info label="Model" value={customer.model} />
           <StatusBadge status={customer.status} />

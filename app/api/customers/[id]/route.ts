@@ -81,3 +81,46 @@ export async function DELETE(
     );
   }
 }
+ 
+
+ 
+
+/* ======================
+   UPDATE CUSTOMER
+====================== */
+export async function PUT(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    await connectDB();
+    verifyToken(req);
+
+    // ✅ UNWRAP PARAMS (THIS FIXES THE ERROR)
+    const { id } = await context.params;
+
+    const body = await req.json();
+    console.log("UPDATE BODY:", body);
+
+    const updated = await Customer.findByIdAndUpdate(
+      id,
+      body,
+      { new: true }
+    );
+
+    if (!updated) {
+      return NextResponse.json(
+        { error: "Customer not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(updated, { status: 200 });
+  } catch (err: any) {
+    console.error("❌ UPDATE ERROR:", err);
+    return NextResponse.json(
+      { error: err.message },
+      { status: 500 }
+    );
+  }
+}

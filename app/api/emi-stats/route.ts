@@ -2,51 +2,102 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db/connectDb";
 import Customer from "@/models/Customer";
 
-export async function GET() {
+/* =========================
+   TYPES (FIXES BUILD ERROR)
+========================= */
+interface Emi {
+  amount: number;
+  paidAmount?: number;
+  dueDate: Date;
+  paidDate?: Date | null;
+  status: "PENDING" | "PARTIAL" | "PAID";
+  payments?: {
+    amount: number;
+    date: Date;
+  }[];
+}
+
+export async function GET(req: Request) {
   try {
     await connectDB();
 
-    const customers = await Customer.find({ status: "APPROVED" });
-
-    let totalEmis = 0;
-    let paidEmis = 0;
-    let pendingEmis = 0;
-    let partialEmis = 0;
-    let dueToday = 0;
-    let overdueEmis = 0;
+    const { searchParams } = new URL(req.url);
+    const type = searchParams.get("type") || "total";
+    const search = searchParams.get("search")?.trim() || "";
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    customers.forEach((customer) => {
-      customer.emis.forEach((emi) => {
-        totalEmis++;
+    /* =========================
+       SEARCH FILTER
+    ========================= */
+    const searchQuery: any = {
+      status: "APPROVED",
+    };
 
+    if (search) {
+      searchQuery.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { contact: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const customers = await Customer.find(searchQuery);
+
+    const result: any[] = [];
+
+    customers.forEach((customer: any) => {
+      customer.emis?.forEach((emi: Emi, index: number) => {
         const due = new Date(emi.dueDate);
         due.setHours(0, 0, 0, 0);
 
-        const isOverdue = due < today && emi.status !== "PAID";
-        const isToday = due.getTime() === today.getTime();
+        const isPaid = emi.status === "PAID";
+        const isPartial = emi.status === "PARTIAL";
+        const isPending = emi.status === "PENDING";
+        const isOverdue = !isPaid && due < today;
+        const isDueToday = !isPaid && due.getTime() === today.getTime();
 
-        if (emi.status === "PAID") paidEmis++;
-        if (emi.status === "PARTIAL") partialEmis++;
-        if (emi.status === "PENDING") pendingEmis++;
-        if (isToday && emi.status !== "PAID") dueToday++;
-        if (isOverdue) overdueEmis++;
+        let match = false;
+
+        if (type === "total") match = true;
+        if (type === "paid" && isPaid) match = true;
+        if (type === "partial" && isPartial) match = true;
+
+        if (
+          type === "pending" &&
+          (isPending || isPartial) &&
+          !isOverdue
+        ) {
+          match = true;
+        }
+
+        if (type === "due-today" && isDueToday) match = true;
+        if (type === "overdue" && isOverdue) match = true;
+
+        if (match) {
+          result.push({
+            customerId: customer._id,
+            emiIndex: index,
+            name: customer.name,
+            contact: customer.contact,
+            model: customer.model,
+
+            amount: emi.amount,
+            paidAmount: emi.paidAmount || 0,
+            dueDate: emi.dueDate,
+            paidDate: emi.paidDate || null,
+
+            status: emi.status,
+            payments: emi.payments || [],
+          });
+        }
       });
     });
 
-    return NextResponse.json({
-      totalEmis,
-      paidEmis,
-      pendingEmis,
-      partialEmis, // ✅ NEW
-      dueToday,
-      overdueEmis,
-    });
-  } catch (err: any) {
+    return NextResponse.json(result, { status: 200 });
+  } catch (error: any) {
     return NextResponse.json(
-      { error: err.message },
+      { error: error.message },
       { status: 500 }
     );
   }

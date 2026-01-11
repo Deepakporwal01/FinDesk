@@ -10,12 +10,12 @@ export async function GET(req: NextRequest) {
   try {
     await connectDB();
 
-    const user = verifyToken(req);
+     verifyToken(req);
 
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search");
 
-    let query: any = {};
+    let query: any = { status: "APPROVED",};
 
     if (search) {
       query = {
