@@ -1,5 +1,5 @@
 "use client";
-
+import pawanshop from "@/public/porwalshop.jpg";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -119,7 +119,7 @@ export default function Home() {
                   href="/requests"
                   className="border px-4 py-2 rounded-lg text-black"
                 >
-                 Requests
+                  Requests
                 </Link>
               </>
             )}
@@ -215,10 +215,8 @@ export default function Home() {
                     onClick={() => setMenuOpen(false)}
                     className="border px-4 py-2 rounded-lg text-center text-black"
                   >
-                   Requests
+                    Requests
                   </Link>
-                   
-
                 </>
               )}
 
@@ -244,45 +242,53 @@ export default function Home() {
       {/* ================= DASHBOARD ================= */}
       {role === "ADMIN" && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-         <Link href="/emi-list?type=total">
-        <DashboardCard
-          title="Total EMIs"
-          value={stats?.totalEmis ?? "--"}
-        />
-      </Link>
+          <Link href="/emi-list?type=total">
+            <DashboardCard
+              title="Total EMIs"
+              value={stats?.totalEmis ?? "--"}
+            />
+          </Link>
 
-      <Link href="/emi-list?type=paid">
-        <DashboardCard
-          title="Paid EMIs"
-          value={stats?.paidEmis ?? "--"}
-          color="green"
-        />
-      </Link>
+          <Link href="/emi-list?type=paid">
+            <DashboardCard
+              title="Paid EMIs"
+              value={stats?.paidEmis ?? "--"}
+              color="green"
+            />
+          </Link>
 
-      <Link href="/emi-list?type=pending">
-        <DashboardCard
-          title="Pending EMIs"
-          value={stats?.pendingEmis ?? "--"}
-          color="yellow"
-        />
-      </Link>
+          {/* ✅ PARTIAL CARD */}
+          <Link href="/emi-list?type=partial">
+            <DashboardCard
+              title="Partial EMIs"
+              value={stats?.partialEmis ?? "--"}
+              color="blue"
+            />
+          </Link>
 
-      <Link href="/emi-list?type=due-today">
-        <DashboardCard
-          title="Due Today"
-          value={stats?.dueToday ?? "--"}
-          color="red"
-        />
-      </Link>
+          <Link href="/emi-list?type=pending">
+            <DashboardCard
+              title="Pending EMIs"
+              value={stats?.pendingEmis ?? "--"}
+              color="yellow"
+            />
+          </Link>
 
-      {/* ✅ OVERDUE CARD */}
-      <Link href="/emi-list?type=overdue">
-        <DashboardCard
-          title="Overdue EMIs"
-          value={stats?.overdueEmis ?? "--"}
-          color="overdue"
-        />
-      </Link>
+          <Link href="/emi-list?type=due-today">
+            <DashboardCard
+              title="Due Today"
+              value={stats?.dueToday ?? "--"}
+              color="red"
+            />
+          </Link>
+
+          <Link href="/emi-list?type=overdue">
+            <DashboardCard
+              title="Overdue EMIs"
+              value={stats?.overdueEmis ?? "--"}
+              color="overdue"
+            />
+          </Link>
         </section>
       )}
       {/* ================= HERO ================= */}
@@ -298,11 +304,11 @@ export default function Home() {
         </div>
 
         <Image
-          src="/mobile-shop.png"
+          src="/pawanshop.jpg"
           alt="Mobile Store"
-          width={360}
-          height={260}
-          className="rounded-xl shadow-lg"
+          width={350}
+          height={160}
+          className="rounded-xl shadow-lg text-center flex mx-auto"
         />
       </main>
       {/* ANIMATION */}
@@ -388,7 +394,7 @@ export default function Home() {
                     href="tel:9754813627"
                     className="text-green-600 hover:underline"
                   >
-                   7024436277
+                    7024436277
                   </a>
                 </li>
                 <li>

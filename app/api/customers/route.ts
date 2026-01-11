@@ -8,23 +8,35 @@ import { verifyToken } from "@/lib/db/auth/verifyToken";
 ====================== */
 export async function GET(req: NextRequest) {
   try {
-    
-
     await connectDB();
 
     const user = verifyToken(req);
 
-    const customers = await Customer.find().sort({ createdAt: -1 });
+    const { searchParams } = new URL(req.url);
+    const search = searchParams.get("search");
+
+    let query: any = {};
+
+    if (search) {
+      query = {
+        $or: [
+          { name: { $regex: search, $options: "i" } },
+          { contact: { $regex: search, $options: "i" } },
+        ],
+      };
+    }
+
+    const customers = await Customer.find(query).sort({ createdAt: -1 });
 
     return NextResponse.json(customers, { status: 200 });
   } catch (err: any) {
-    console.error("❌ GET ERROR:", err);
     return NextResponse.json(
       { error: err.message || "Failed to fetch customers" },
       { status: 500 }
     );
   }
 }
+
 
 /* ======================
    POST → CREATE CUSTOMER

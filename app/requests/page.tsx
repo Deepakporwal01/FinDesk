@@ -154,7 +154,7 @@ export default function RequestsPage() {
                   <p className="text-lg   text-gray-900">{c.address}</p>
 
                   <p className="text-sm text-gray-600">
-                    {c.model} • {c.contact}
+                  Contact :{c.contact}
                   </p>
 
                   <p className="text-xs text-gray-400">IMEI: {c.imei}</p>

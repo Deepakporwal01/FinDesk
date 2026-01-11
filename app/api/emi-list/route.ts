@@ -8,11 +8,27 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const type = searchParams.get("type") || "total";
+    const search = searchParams.get("search")?.trim() || "";
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const customers = await Customer.find({status: "APPROVED"});
+    /* =========================
+       SEARCH FILTER
+    ========================= */
+    const searchQuery: any = {
+      status: "APPROVED",
+    };
+
+    if (search) {
+      searchQuery.$or = [
+        { name: { $regex: search, $options: "i" } },     // name search
+        { contact: { $regex: search, $options: "i" } },  // mobile search
+      ];
+    }
+
+    const customers = await Customer.find(searchQuery);
+
     const result: any[] = [];
 
     customers.forEach((customer) => {
@@ -34,6 +50,9 @@ export async function GET(req: Request) {
         // PAID
         if (type === "paid" && isPaid) match = true;
 
+        // PARTIAL
+        if (type === "partial" && isPartial) match = true;
+
         // PENDING (includes PARTIAL but not overdue)
         if (
           type === "pending" &&
@@ -44,14 +63,10 @@ export async function GET(req: Request) {
         }
 
         // DUE TODAY
-        if (type === "due-today" && isDueToday) {
-          match = true;
-        }
+        if (type === "due-today" && isDueToday) match = true;
 
         // OVERDUE
-        if (type === "overdue" && isOverdue) {
-          match = true;
-        }
+        if (type === "overdue" && isOverdue) match = true;
 
         if (match) {
           result.push({
@@ -63,21 +78,11 @@ export async function GET(req: Request) {
 
             amount: emi.amount,
             paidAmount: emi.paidAmount || 0,
-            remainingAmount: Math.max(
-              emi.amount - (emi.paidAmount || 0),
-              0
-            ), // ✅ ADDED
-
             dueDate: emi.dueDate,
-
-            paidDate: emi.paidDate || null, // FULL PAID DATE
-            lastPaidDate:
-              emi.payments?.length > 0
-                ? emi.payments[emi.payments.length - 1].date
-                : null, // ✅ PARTIAL DATE
+            paidDate: emi.paidDate || null,
 
             status: emi.status,
-            overdue: isOverdue, // already present
+            payments: emi.payments || [],
           });
         }
       });

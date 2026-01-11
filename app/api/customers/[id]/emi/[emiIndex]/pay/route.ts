@@ -9,15 +9,12 @@ export async function PUT(
 ) {
   try {
     await connectDB();
+    verifyToken(req); // ADMIN ONLY
 
-    // 🔐 AUTH CHECK (ADMIN ONLY)
-    verifyToken(req);
-
-    // ✅ UNWRAP PARAMS (THIS FIXES THE ERROR)
     const { id, emiIndex } = await context.params;
-    const index = Number(emiIndex);
- 
-    if (isNaN(index)) {
+    const startIndex = Number(emiIndex);
+
+    if (isNaN(startIndex)) {
       return NextResponse.json(
         { error: "Invalid EMI index" },
         { status: 400 }
@@ -25,43 +22,67 @@ export async function PUT(
     }
 
     const { amount } = await req.json();
-
     if (!amount || amount <= 0) {
       return NextResponse.json(
-        { error: "Invalid amount" },
+        { error: "Invalid payment amount" },
         { status: 400 }
       );
     }
 
-    // 🔍 FIND CUSTOMER
     const customer = await Customer.findById(id);
-
-    if (!customer || !customer.emis[index]) {
+    if (!customer) {
       return NextResponse.json(
-        { error: "EMI not found" },
+        { error: "Customer not found" },
         { status: 404 }
       );
     }
 
-    const emi = customer.emis[index];
-console.log(customer)
-    // 💰 ADD PAYMENT
-    emi.paidAmount = (emi.paidAmount || 0) + Number(amount);
+    let remainingPayment = Number(amount);
+    const emis = customer.emis;
+    const now = new Date();
 
-    // ✅ UPDATE STATUS
-    if (emi.paidAmount >= emi.amount) {
-      emi.paidAmount = emi.amount;
-      emi.status = "PAID";
-      emi.paidDate = new Date();
-    } else {
-      emi.status = "PARTIAL";
+    // 🔁 AUTO-ADJUST PAYMENT ACROSS EMIs
+    for (let i = startIndex; i < emis.length && remainingPayment > 0; i++) {
+      const emi = emis[i];
+
+      if (emi.status === "PAID") continue;
+
+      const remainingEmiAmount =
+        emi.amount - (emi.paidAmount || 0);
+
+      if (remainingEmiAmount <= 0) continue;
+
+      const payHere = Math.min(
+        remainingEmiAmount,
+        remainingPayment
+      );
+
+      // ✅ PUSH PAYMENT ENTRY
+      emi.payments.push({
+        amount: payHere,
+        date: now,
+      });
+
+      // ✅ UPDATE CACHED FIELDS
+      emi.paidAmount += payHere;
+      emi.paidDate = now;
+
+      remainingPayment -= payHere;
+
+      // ✅ STATUS UPDATE
+      if (emi.paidAmount >= emi.amount) {
+        emi.paidAmount = emi.amount;
+        emi.status = "PAID";
+      } else {
+        emi.status = "PARTIAL";
+      }
     }
 
     await customer.save();
 
     return NextResponse.json({
-      message: "Payment recorded successfully",
-      emi,
+      message: "Payment adjusted across EMIs successfully",
+      unadjustedAmount: remainingPayment, // usually 0
     });
   } catch (err: any) {
     return NextResponse.json(

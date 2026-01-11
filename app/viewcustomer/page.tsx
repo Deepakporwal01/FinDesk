@@ -25,33 +25,39 @@ export default function ViewCustomers() {
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("User not authenticated");
+  // 🔍 SEARCH STATE (NEW)
+  const [search, setSearch] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
-        const res = await fetch("/api/customers", {
+  const fetchCustomers = async (query = "") => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("User not authenticated");
+
+      const res = await fetch(
+        `/api/customers?search=${encodeURIComponent(query)}`,
+        {
           headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const text = await res.text();
-        const data = text ? JSON.parse(text) : null;
-
-        if (!res.ok) {
-          throw new Error(data?.error || "Failed to fetch customers");
         }
+      );
 
-        setCustomers(Array.isArray(data) ? data : []);
-      } catch (err: any) {
-        setError(err.message || "Something went wrong");
-      } finally {
-        setLoading(false);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to fetch customers");
       }
-    };
 
-    fetchCustomers();
-  }, []);
+      setCustomers(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCustomers(searchQuery);
+  }, [searchQuery]);
 
   /* ================= DELETE CUSTOMER ================= */
   const handleDelete = async (id: string) => {
@@ -70,11 +76,8 @@ export default function ViewCustomers() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!res.ok) {
-        throw new Error("Failed to delete customer");
-      }
+      if (!res.ok) throw new Error("Failed to delete customer");
 
-      // ✅ Remove from UI
       setCustomers((prev) => prev.filter((c) => c._id !== id));
     } catch (err: any) {
       alert(err.message || "Delete failed");
@@ -118,6 +121,24 @@ export default function ViewCustomers() {
         <p className="mt-2 text-neutral-500">
           Manage and view customer information
         </p>
+
+        {/* 🔍 SEARCH BAR (NEW – UI SAFE) */}
+        <div className="relative mt-4 max-w-md">
+          <input
+            type="text"
+            placeholder="Search by name or mobile number"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full px-4 py-2 pr-10 border text-black border-neutral-300 rounded-lg text-sm"
+          />
+          <button
+            onClick={() => setSearchQuery(search)}
+            className="absolute right-3 top-1/2 -translate-y-1/2"
+            title="Search"
+          >
+            🔍
+          </button>
+        </div>
       </div>
 
       {/* GRID */}
@@ -138,7 +159,7 @@ export default function ViewCustomers() {
                          shadow-sm hover:shadow-lg
                          transition-all hover:-translate-y-1"
             >
-              {/* 🗑 DELETE ICON */}
+              {/* DELETE */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -148,12 +169,10 @@ export default function ViewCustomers() {
                 className="absolute top-3 right-3 text-xl text-red-500
                            hover:text-red-600 transition
                            disabled:opacity-50 cursor-pointer"
-                title="Delete customer"
               >
                 🗑
               </button>
 
-              {/* CARD CONTENT (LINK) */}
               <Link href={`/viewcustomer/${c._id}`} className="block">
                 <div className="flex items-center gap-4">
                   <div
@@ -175,7 +194,9 @@ export default function ViewCustomers() {
                 <div className="my-5 h-px bg-neutral-200" />
 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-neutral-500">{c.contact}</span>
+                  <span className="text-sm text-neutral-500">
+                    {c.contact}
+                  </span>
 
                   <span
                     className="text-sm font-medium text-neutral-900 opacity-0
@@ -190,7 +211,6 @@ export default function ViewCustomers() {
         })}
       </div>
 
-      {/* EMPTY STATE */}
       {customers.length === 0 && (
         <div className="text-center text-neutral-500 mt-20">
           No customers found

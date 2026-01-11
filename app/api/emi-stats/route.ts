@@ -6,64 +6,47 @@ export async function GET() {
   try {
     await connectDB();
 
-    const customers = await Customer.find({status: "APPROVED"});
+    const customers = await Customer.find({ status: "APPROVED" });
 
     let totalEmis = 0;
-    let pendingEmis = 0;
     let paidEmis = 0;
+    let pendingEmis = 0;
+    let partialEmis = 0;
     let dueToday = 0;
-    let overdueEmis = 0; // ✅ ADDED
+    let overdueEmis = 0;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     customers.forEach((customer) => {
-      customer.emis?.forEach((emi: any) => {
+      customer.emis.forEach((emi) => {
         totalEmis++;
 
-        const dueDate = new Date(emi.dueDate);
-        dueDate.setHours(0, 0, 0, 0);
+        const due = new Date(emi.dueDate);
+        due.setHours(0, 0, 0, 0);
 
-        const isPaid = emi.status === "PAID";
-        const isPending =
-          emi.status === "PENDING" || emi.status === "PARTIAL";
-        const isOverdue = !isPaid && dueDate < today;
+        const isOverdue = due < today && emi.status !== "PAID";
+        const isToday = due.getTime() === today.getTime();
 
-        // ✅ PAID
-        if (isPaid) {
-          paidEmis++;
-        }
-
-        // ✅ PENDING (includes PARTIAL)
-        if (isPending) {
-          pendingEmis++;
-
-          // DUE TODAY
-          if (dueDate.getTime() === today.getTime()) {
-            dueToday++;
-          }
-        }
-
-        // ✅ OVERDUE
-        if (isOverdue) {
-          overdueEmis++;
-        }
+        if (emi.status === "PAID") paidEmis++;
+        if (emi.status === "PARTIAL") partialEmis++;
+        if (emi.status === "PENDING") pendingEmis++;
+        if (isToday && emi.status !== "PAID") dueToday++;
+        if (isOverdue) overdueEmis++;
       });
     });
 
+    return NextResponse.json({
+      totalEmis,
+      paidEmis,
+      pendingEmis,
+      partialEmis, // ✅ NEW
+      dueToday,
+      overdueEmis,
+    });
+  } catch (err: any) {
     return NextResponse.json(
-      {
-        totalEmis,
-        pendingEmis,
-        paidEmis,
-        dueToday,
-        overdueEmis, // ✅ RETURNED
-      },
-      { status: 200 }
-    );
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message },
+      { error: err.message },
       { status: 500 }
     );
   }

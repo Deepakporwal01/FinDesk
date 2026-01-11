@@ -17,8 +17,12 @@ interface EmiItem {
   amount: number;
   paidAmount: number;
   dueDate: string;
-  paidDate: string | null;
+  paidDate: Date | null;
   status: "PENDING" | "PARTIAL" | "PAID";
+  payments?: {
+    amount: number;
+    date: string;
+  }[];
 }
 
 /* =========================
@@ -34,15 +38,18 @@ function EmiListContent() {
   const [payAmount, setPayAmount] = useState<
     Record<number, number | undefined>
   >({});
-  const [deleting, setDeleting] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   /* =========================
       FETCH EMI LIST
   ========================= */
-  const fetchEmis = async () => {
+  const fetchEmis = async (query = "") => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/emi-list?type=${type}`);
+      const res = await fetch(
+        `/api/emi-list?type=${type}&search=${encodeURIComponent(query)}`
+      );
       const data = await res.json();
       setEmis(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -53,9 +60,12 @@ function EmiListContent() {
     }
   };
 
+  /* =========================
+      INITIAL LOAD
+  ========================= */
   useEffect(() => {
-    fetchEmis();
-  }, [type]);
+    fetchEmis(searchQuery);
+  }, [type, searchQuery]);
 
   /* =========================
       ADD PAYMENT
@@ -83,32 +93,9 @@ function EmiListContent() {
         [emiIndex]: undefined,
       }));
 
-      fetchEmis();
+      fetchEmis(searchQuery);
     } catch (err) {
       console.error("Payment failed", err);
-    }
-  };
-
-  /* =========================
-      DELETE EMI
-  ========================= */
-  const deleteEmi = async (customerId: string, emiIndex: number) => {
-    const ok = window.confirm("Delete this EMI?");
-    if (!ok) return;
-
-    try {
-      setDeleting(`${customerId}-${emiIndex}`);
-      await fetch(`/api/customers/${customerId}/emi/${emiIndex}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-      fetchEmis();
-    } catch (err) {
-      console.error("Delete EMI failed", err);
-    } finally {
-      setDeleting(null);
     }
   };
 
@@ -143,7 +130,7 @@ function EmiListContent() {
   return (
     <div className="min-h-screen bg-white px-4 sm:px-6 py-8">
       {/* HEADER */}
-      <div className="mb-8">
+      <div className="mb-6">
         <button
           onClick={() => router.back()}
           className="mb-4 px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-gray-800"
@@ -154,6 +141,25 @@ function EmiListContent() {
         <h1 className="text-3xl font-bold text-gray-900 capitalize">
           {type.replace("-", " ")} EMI Customers
         </h1>
+
+        {/* 🔍 SEARCH BAR WITH ICON */}
+        <div className="relative mt-4 w-full max-w-md">
+          <input
+            type="text"
+            placeholder="Search by name or mobile number"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+
+          <button
+            onClick={() => setSearchQuery(search)}
+            className="absolute right-3 top-1/2 -translate-y-1/2"
+            title="Search"
+          >
+            🔍
+          </button>
+        </div>
       </div>
 
       {emis.length === 0 ? (
@@ -186,43 +192,45 @@ function EmiListContent() {
                   }`}
                 />
 
-                {/* DELETE BUTTON (ADDED) */}
-
                 {/* LEFT */}
                 <div className="pl-4 space-y-1">
                   <p className="text-lg font-semibold text-gray-900">
-                    {emi.name}
+                    Name : {emi.name}
                   </p>
 
-                  <p className="text-sm text-gray-700">
-                    {emi.model} • {emi.contact}
+                  <p className="text-md text-gray-700">
+                    Model: {emi.model}
+                  </p>
+
+                  <p className="text-md text-black">
+                    Contact Number : <b>{emi.contact}</b>
                   </p>
 
                   <p className="text-sm text-gray-800">
-                    Due: {new Date(emi.dueDate).toDateString()}
+                    Due Date: {new Date(emi.dueDate).toDateString()}
                   </p>
 
                   {overdue && (
-                    <p className="text-xs font-semibold text-red-600">
+                    <p className="text-sm font-semibold text-red-600">
                       ⚠ OVERDUE
                     </p>
                   )}
 
-                  {emi.status !== "PENDING" && (
-                    <p className="text-sm text-green-600">
-                      Paid ₹{emi.paidAmount}
-                    </p>
-                  )}
-
-                  {emi.status === "PAID" && emi.paidDate && (
-                    <p className="text-sm text-green-700">
-                      Completed on {new Date(emi.paidDate).toDateString()}
-                    </p>
+                  {/* ✅ PAYMENT HISTORY (MOBILE SAFE, NO UI CHANGE) */}
+                  {emi.payments && emi.payments.length > 0 && (
+                    <div className="mt-1 text-md text-green-600 space-y-1 break-words">
+                      {emi.payments.map((p, i) => (
+                        <p key={i} className="whitespace-normal">
+                          Paid <b>₹{p.amount}</b> on{" "}
+                          {new Date(p.date).toDateString()}
+                        </p>
+                      ))}
+                    </div>
                   )}
 
                   {emi.status !== "PAID" && (
-                    <p className="text-xs text-red-600">
-                      Remaining ₹{remaining}
+                    <p className="text-sm text-red-600">
+                      Remaining Amount ₹ : {remaining}
                     </p>
                   )}
                 </div>
@@ -262,37 +270,19 @@ function EmiListContent() {
                                 : Number(e.target.value),
                           }))
                         }
-                        className="
-                          w-36 px-3 py-2 rounded-lg
-                          border border-black
-                          bg-white
-                          text-sm text-black
-                          placeholder:text-red-500
-                          focus:outline-none
-                          focus:ring-2 focus:ring-gray-900/20
-                          appearance-none
-                          [&::-webkit-inner-spin-button]:appearance-none
-                          [&::-webkit-outer-spin-button]:appearance-none
-                          [-moz-appearance:textfield]
-                        "
+                        className="w-36 px-3 py-2 rounded-lg border border-black bg-white text-sm text-black placeholder:text-red-500 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
                       />
 
                       <button
-                        onClick={() => payEmi(emi.customerId, emi.emiIndex)}
+                        onClick={() =>
+                          payEmi(emi.customerId, emi.emiIndex)
+                        }
                         className="px-4 py-2 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-800"
                       >
                         Pay Now
                       </button>
                     </>
                   )}
-                  <button
-                    onClick={() => deleteEmi(emi.customerId, emi.emiIndex)}
-                    disabled={deleting === `${emi.customerId}-${emi.emiIndex}`}
-                    className="  text-red-300 hover:text-red-600 text-sm border border-red-300 hover:border-red-600 p-1 cursor-pointer "
-                    title="Delete EMI"
-                  >
-                    Remove
-                  </button>
                 </div>
               </div>
             );

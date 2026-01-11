@@ -8,8 +8,9 @@ interface DashboardStats {
   totalEmis: number;
   paidEmis: number;
   pendingEmis: number;
+  partialEmis: number; // ✅ NEW
   dueToday: number;
-  overdueEmis: number; // ✅ NEW
+  overdueEmis: number;
 }
 
 export default function Page() {
@@ -26,7 +27,8 @@ export default function Page() {
   }, []);
 
   return (
-    <section className="max-w-7xl mx-auto px-6 py-10 grid sm:grid-cols-2 lg:grid-cols-5 gap-6">
+    <section className="max-w-7xl mx-auto px-6 py-10 grid sm:grid-cols-2 lg:grid-cols-6 gap-6">
+
       <Link href="/emi-list?type=total">
         <DashboardCard
           title="Total EMIs"
@@ -39,6 +41,15 @@ export default function Page() {
           title="Paid EMIs"
           value={stats?.paidEmis ?? "--"}
           color="green"
+        />
+      </Link>
+
+      {/* ✅ PARTIAL CARD */}
+      <Link href="/emi-list?type=partial">
+        <DashboardCard
+          title="Partial EMIs"
+          value={stats?.partialEmis ?? "--"}
+          color="blue"
         />
       </Link>
 
@@ -58,7 +69,6 @@ export default function Page() {
         />
       </Link>
 
-      {/* ✅ OVERDUE CARD */}
       <Link href="/emi-list?type=overdue">
         <DashboardCard
           title="Overdue EMIs"
@@ -66,6 +76,7 @@ export default function Page() {
           color="overdue"
         />
       </Link>
+
     </section>
   );
 }
