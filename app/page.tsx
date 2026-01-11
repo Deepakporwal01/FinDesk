@@ -10,6 +10,7 @@ interface DashboardStats {
   totalEmis: number;
   paidEmis: number;
   pendingEmis: number;
+  partialEmis: number; 
   overdueEmis: number;
   dueToday: number;
 }
