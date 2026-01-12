@@ -5,11 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 
 function formatDate(dateString: string) {
   const date = new Date(dateString);
-
   const dd = String(date.getDate()).padStart(2, "0");
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const yy = String(date.getFullYear()).slice(-2);
-
   return `${dd}-${mm}-${yy}`;
 }
 
@@ -30,10 +28,8 @@ interface Customer {
   alternateNumber?: string;
   model: string;
   imei: string;
-
   supplier?: string;
   supplierNumber?: string;
-
   price: number;
   downPayment: number;
   emiAmount: number;
@@ -48,9 +44,9 @@ export default function CustomerDetails() {
 
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchCustomer = async () => {
+   const [payAmount, setPayAmount] = useState<number | "">("");
+  const [paying, setPaying] = useState(false);
+ const fetchCustomer = async () => {
       const token = localStorage.getItem("token");
 
       const res = await fetch(`/api/customers/${id}`, {
@@ -63,10 +59,10 @@ export default function CustomerDetails() {
       setCustomer(data);
       setLoading(false);
     };
-
+  useEffect(() => {
     if (id) fetchCustomer();
   }, [id]);
-
+ 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-slate-500">
@@ -85,11 +81,61 @@ export default function CustomerDetails() {
 
   const [imei1, imei2] = customer.imei.split(",");
 
+  /* ================= PAYMENT CALCULATIONS ================= */
+  const totalEmiAmount = customer.emis.reduce(
+    (sum, emi) => sum + emi.amount,
+    0
+  );
+
+  const totalPaidAmount = customer.emis.reduce(
+    (sum, emi) => sum + emi.paidAmount,
+    0
+  );
+
+  const remainingAmount = totalEmiAmount - totalPaidAmount;
+   const handlePay = async () => {
+    if (!payAmount || payAmount <= 0) return;
+
+    const firstUnpaidIndex = customer.emis.findIndex(
+      (e) => e.status !== "PAID"
+    );
+
+    if (firstUnpaidIndex === -1) {
+      alert("All EMIs are already paid");
+      return;
+    }
+
+    try {
+      setPaying(true);
+      const token = localStorage.getItem("token");
+
+      await fetch(
+        `/api/customers/${customer._id}/emi/${firstUnpaidIndex}/pay`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ amount: payAmount }),
+        }
+      );
+
+      setPayAmount("");
+      await fetchCustomer(); // ✅ refresh data
+    } catch (err) {
+      alert("Payment failed");
+    } finally {
+      setPaying(false);
+    }
+  };
+
+
   return (
     <div className="min-h-screen bg-white px-4 py-10 flex justify-center">
       <div className="w-full max-w-5xl space-y-8">
 
-        {/* HEADER WITH PHOTO */}
+        {/* HEADER */}
         <div className="flex items-center gap-5">
           <button
             onClick={() => router.back()}
@@ -99,9 +145,8 @@ export default function CustomerDetails() {
             ← Back
           </button>
 
-          {/* ✅ EDIT BUTTON (ONLY ADDITION) */}
           <button
-            onClick={() => router.push(`/viewcustomer/${customer._id}/edit/`)}
+            onClick={() => router.push(`/viewcustomer/${customer._id}/edit`)}
             className="px-4 py-2 rounded-lg border border-slate-300
                        text-slate-700 hover:bg-slate-100 transition"
           >
@@ -130,9 +175,7 @@ export default function CustomerDetails() {
             <h1 className="text-3xl font-bold text-slate-900">
               {customer.name}
             </h1>
-            <p className="text-sm text-slate-500">
-              Customer Profile
-            </p>
+            <p className="text-sm text-slate-500">Customer Profile</p>
           </div>
         </div>
 
@@ -154,11 +197,51 @@ export default function CustomerDetails() {
           <Info label="IMEI 2" value={imei2} />
         </Card>
 
-        {/* PAYMENT */}
+        {/* PAYMENT SUMMARY + PAY NOW */}
         <Card title="Payment Summary">
           <Price label="Total Price" value={customer.price} />
           <Price label="Down Payment" value={customer.downPayment} />
           <Price label="Monthly EMI" value={customer.emiAmount} />
+
+          <div>
+            <p className="text-xs uppercase tracking-wide text-slate-500">
+              Remaining Amount
+            </p>
+            <p className="text-red-600 font-semibold text-lg">
+              ₹{remainingAmount}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs uppercase tracking-wide text-slate-500">
+              Pay Amount
+            </p>
+            <input
+              type="number"
+              value={payAmount}
+              onChange={(e) =>
+                setPayAmount(
+                  e.target.value === "" ? "" : Number(e.target.value)
+                )
+              }
+              placeholder={`Max ₹${remainingAmount}`}
+              className="mt-1 w-full border border-slate-300
+                         rounded-lg px-3 py-2 text-black"
+            />
+          </div>
+
+          <div className="sm:col-span-2 mt-4">
+            <button
+              disabled={!payAmount || payAmount <= 0}
+              onClick={handlePay}
+              className="w-full py-2 rounded-lg
+                         bg-green-500 text-white
+                         font-medium hover:bg-green-700
+                          "
+            >
+              Pay Now
+            </button>
+          </div>
         </Card>
 
         {/* EMI TABLE */}
@@ -205,7 +288,7 @@ export default function CustomerDetails() {
   );
 }
 
-/* ================= COMPONENTS ================= */
+/* ================= UI HELPERS ================= */
 
 function Card({ title, children }: any) {
   return (
@@ -267,16 +350,20 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function EmiBadge({ status }: { status: string }) {
+  const colorMap: Record<string, string> = {
+    PAID: "bg-emerald-100 text-emerald-700",
+    PARTIAL: "bg-blue-100 text-blue-700",
+    PENDING: "bg-amber-100 text-amber-700",
+  };
+
   return (
     <span
-      className={`px-3 py-1 rounded-full text-xs font-medium
-      ${
-        status === "PAID"
-          ? "bg-emerald-100 text-emerald-700"
-          : "bg-amber-100 text-amber-700"
+      className={`px-3 py-1 rounded-full text-xs font-medium ${
+        colorMap[status] || "bg-gray-100 text-gray-700"
       }`}
     >
       {status}
     </span>
   );
 }
+

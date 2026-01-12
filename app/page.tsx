@@ -1,5 +1,5 @@
 "use client";
-import pawanshop from "@/public/porwalshop.jpg";
+
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -10,9 +10,10 @@ interface DashboardStats {
   totalEmis: number;
   paidEmis: number;
   pendingEmis: number;
-  partialEmis: number; 
+  partialEmis: number;
   overdueEmis: number;
   dueToday: number;
+  totalCustomers: number;
 }
 
 type Role = "ADMIN" | "AGENT" | null;
@@ -173,15 +174,21 @@ export default function Home() {
             </div>
 
             <nav className="flex flex-col gap-4 text-gray-700 text-base">
-              <Link href="/" onClick={() => setMenuOpen(false)}>
-                Home
-              </Link>
-              <Link href="/aboutus" onClick={() => setMenuOpen(false)}>
-                About Us
-              </Link>
-              <Link href="/contact" onClick={() => setMenuOpen(false)}>
-                Contact Us
-              </Link>
+              {role !== "ADMIN" && (
+                <Link href="/" onClick={() => setMenuOpen(false)}>
+                  Home
+                </Link>
+              )}
+              {role !== "ADMIN" && (
+                <Link href="/aboutus" onClick={() => setMenuOpen(false)}>
+                  About Us
+                </Link>
+              )}
+              {role !== "ADMIN" && (
+                <Link href="/contact" onClick={() => setMenuOpen(false)}>
+                  Contact Us
+                </Link>
+              )}
             </nav>
 
             <div className="border-t pt-4 flex flex-col gap-3">
@@ -243,6 +250,12 @@ export default function Home() {
       {/* ================= DASHBOARD ================= */}
       {role === "ADMIN" && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Link href="/emi-list?type=total">
+            <DashboardCard
+              title="Total Customers"
+              value={stats?.totalCustomers ?? "--"}
+            />
+          </Link>
           <Link href="/emi-list?type=total">
             <DashboardCard
               title="Total EMIs"
