@@ -11,18 +11,39 @@ import {
 } from "recharts";
 
 interface Props {
-  monthlySales: Record<string, number>;
-  monthlyCash: Record<string, number>;
+  monthlySales?: Record<string, number>;
+  monthlyCash?: Record<string, number>;
 }
 
 export default function SalesGrowthChart({
-  monthlySales,
-  monthlyCash,
+  monthlySales = {},
+  monthlyCash = {},
 }: Props) {
-  const data = Object.keys(monthlySales).map((month) => ({
+  // ✅ SAFE: monthlySales is always an object now
+  const months = Object.keys(monthlySales);
+
+  // Optional: handle empty state
+  if (months.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">
+          Sales & Cash Growth
+        </h2>
+        <p className="text-sm text-gray-500">
+          No monthly data available
+        </p>
+
+        <div className="h-80 flex items-center justify-center text-gray-400">
+          No chart data
+        </div>
+      </div>
+    );
+  }
+
+  const data = months.map((month) => ({
     month,
-    sales: monthlySales[month] || 0,
-    cash: monthlyCash[month] || 0,
+    sales: monthlySales[month] ?? 0,
+    cash: monthlyCash[month] ?? 0,
   }));
 
   return (
