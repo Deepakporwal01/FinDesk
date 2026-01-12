@@ -5,10 +5,10 @@ interface Defaulter {
 }
 
 interface Props {
-  defaulters: Defaulter[];
+  defaulters?: Defaulter[];
 }
 
-export default function TopDefaulters({ defaulters }: Props) {
+export default function TopDefaulters({ defaulters = [] }: Props) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
       <h2 className="text-lg font-semibold text-gray-900 mb-1">
