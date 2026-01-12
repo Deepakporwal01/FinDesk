@@ -17,21 +17,20 @@ interface DashboardStats {
 }
 
 type Role = "ADMIN" | "AGENT" | null;
-const id =localStorage.getItem("id")  ;
-console.log(id)
+ 
 export default function Home() {
   const router = useRouter();
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [role, setRole] = useState<Role>(null);
+  const [id, setId] = useState<string | null>(null);
 
-  /* LOAD ROLE */
-  const [role, setRole] = useState<Role>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("role") as Role;
-    }
-    return null;
-  });
+  /* LOAD AUTH DATA (CLIENT ONLY) */
+  useEffect(() => {
+    setRole(localStorage.getItem("role") as Role);
+    setId(localStorage.getItem("id"));
+  }, []);
 
   /* FETCH ADMIN STATS */
   useEffect(() => {
@@ -60,6 +59,8 @@ export default function Home() {
     setMenuOpen(false);
     router.push("/");
   };
+
+  // JSX continues…
 
   return (
     <div className="min-h-screen bg-gray-50">
