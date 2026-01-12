@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
 interface Agent {
   agentId: string;
@@ -16,7 +17,6 @@ export default function AgentsPage() {
     fetch("/api/agents")
       .then((res) => res.json())
       .then((data) =>
-        // keep only required fields
         setAgents(
           data.map((a: any) => ({
             agentId: a.agentId,
@@ -30,12 +30,22 @@ export default function AgentsPage() {
     <section className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-white">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
 
+        {/* ================= BACK BUTTON ================= */}
+        <button
+          onClick={() => router.back()}
+          className="mb-6 inline-flex items-center gap-2 text-black font-medium
+                     hover:opacity-70 transition"
+        >
+          <ArrowLeft size={20} />
+          Back
+        </button>
+
         {/* ================= HEADER ================= */}
         <div className="mb-10">
           <h1 className="text-2xl font-bold text-gray-900 text-center">
             Agents
           </h1>
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-sm text-gray-500 mt-2 text-center">
             Tap an agent to view all customers added by them
           </p>
         </div>
@@ -52,7 +62,9 @@ export default function AgentsPage() {
               `}
             >
               {/* Avatar */}
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-white font-bold">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full 
+                              bg-gradient-to-br from-indigo-500 to-purple-500 
+                              text-white font-bold">
                 {agent.agentName
                   .split(" ")
                   .map((n) => n[0])

@@ -60,6 +60,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       token,
+      id: user._id.toString(),
       role: user.role,
       name: user.name,
     });

@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
- import Link from "next/link";
+import Link from "next/link";
 
 /* =========================
    TYPES
@@ -174,9 +174,8 @@ function EmiListContent() {
             const overdue = isOverdue(emi);
 
             return (
-              
-              <Link
-              href={`/viewcustomer/${emi.customerId}`}
+              <div
+                onClick={() => router.push(`/viewcustomer/${emi.customerId}`)}
                 key={`${emi.customerId}-${emi.emiIndex}`}
                 className={`relative rounded-2xl border border-gray-200 shadow-sm p-6 flex justify-between ${
                   overdue ? "bg-red-50" : "bg-white"
@@ -201,9 +200,7 @@ function EmiListContent() {
                     Name : {emi.name}
                   </p>
 
-                  <p className="text-md text-gray-700">
-                    Model: {emi.model}
-                  </p>
+                  <p className="text-md text-gray-700">Model: {emi.model}</p>
 
                   <p className="text-md text-black">
                     Contact Number : <b>{emi.contact}</b>
@@ -221,7 +218,7 @@ function EmiListContent() {
 
                   {/* ✅ PAYMENT HISTORY (MOBILE SAFE, NO UI CHANGE) */}
                   {emi.payments && emi.payments.length > 0 && (
-                    <div className="mt-1 text-md text-green-600 space-y-1 break-words">
+                    <div className="mt-1 text-md text-green-600 space-y-1 wrap-break-words">
                       {emi.payments.map((p, i) => (
                         <p key={i} className="whitespace-normal">
                           Paid <b>₹{p.amount}</b> on{" "}
@@ -264,6 +261,7 @@ function EmiListContent() {
                         type="number"
                         placeholder={`Remaining ₹${remaining}`}
                         value={payAmount[emi.emiIndex] ?? ""}
+                        onClick={(e) => e.stopPropagation()}
                         onChange={(e) =>
                           setPayAmount((prev) => ({
                             ...prev,
@@ -273,13 +271,14 @@ function EmiListContent() {
                                 : Number(e.target.value),
                           }))
                         }
-                        className="w-36 px-3 py-2 rounded-lg border border-black bg-white text-sm text-black placeholder:text-red-500 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
+                        className="w-36 px-3 py-2 rounded-lg border border-black bg-white text-sm text-black"
                       />
 
                       <button
-                        onClick={() =>
-                          payEmi(emi.customerId, emi.emiIndex)
-                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          payEmi(emi.customerId, emi.emiIndex);
+                        }}
                         className="px-4 py-2 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-800"
                       >
                         Pay Now
@@ -287,8 +286,7 @@ function EmiListContent() {
                     </>
                   )}
                 </div>
-              </Link>
-              
+              </div>
             );
           })}
         </div>

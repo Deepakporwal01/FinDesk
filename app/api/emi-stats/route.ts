@@ -21,6 +21,12 @@ export async function GET() {
     const monthlySales: Record<string, number> = {};
     const monthlyCash: Record<string, number> = {};
 
+    // ✅ NEW: top defaulters accumulator
+    const defaulterMap: Record<
+      string,
+      { name: string; contact: string; pendingAmount: number }
+    > = {};
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -28,6 +34,8 @@ export async function GET() {
     totalCustomers = customers.length;
 
     customers.forEach((customer: any) => {
+      let customerPending = 0;
+
       customer.emis?.forEach((emi: any) => {
         totalEmis++;
 
@@ -37,6 +45,7 @@ export async function GET() {
         totalSales += emiAmount;
         totalCashReceived += paidAmount;
         pendingCash += emiAmount - paidAmount;
+        customerPending += emiAmount - paidAmount;
 
         const due = new Date(emi.dueDate);
         due.setHours(0, 0, 0, 0);
@@ -75,7 +84,21 @@ export async function GET() {
           overdueEmis++;
         }
       });
+
+      // ✅ Track defaulter only if pending > 0
+      if (customerPending > 0) {
+        defaulterMap[customer._id.toString()] = {
+          name: customer.name,
+          contact: customer.contact || "",
+          pendingAmount: customerPending,
+        };
+      }
     });
+
+    // ✅ Convert map → sorted array
+    const topDefaulters = Object.values(defaulterMap)
+      .sort((a, b) => b.pendingAmount - a.pendingAmount)
+      .slice(0, 5); // top 5
 
     return NextResponse.json({
       totalCustomers,
@@ -92,6 +115,9 @@ export async function GET() {
 
       monthlySales,
       monthlyCash,
+
+      // ✅ NEW
+      topDefaulters,
     });
   } catch (err: any) {
     return NextResponse.json(

@@ -53,6 +53,7 @@ export default function DashboardPage() {
   return (
     <section className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-6 py-10">
+
         {/* ================= HEADER ================= */}
         <div className="mb-12">
           <button
@@ -62,7 +63,9 @@ export default function DashboardPage() {
             ← Back
           </button>
 
-          <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Dashboard
+          </h1>
           <p className="text-sm text-gray-500">
             Business & EMI performance overview
           </p>
@@ -103,11 +106,7 @@ export default function DashboardPage() {
         {/* ================= EMI STATS ================= */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-6 gap-6">
           <DashboardCard title="Total EMIs" value={stats.totalEmis} />
-          <DashboardCard
-            title="Paid EMIs"
-            value={stats.paidEmis}
-            color="green"
-          />
+          <DashboardCard title="Paid EMIs" value={stats.paidEmis} color="green" />
           <DashboardCard
             title="Partial EMIs"
             value={stats.partialEmis}
@@ -147,10 +146,11 @@ export default function DashboardPage() {
             overdue={stats.overdueEmis}
           />
 
-          <SalesGrowthChart
-            monthlySales={stats?.monthlySales || {}}
-            monthlyCash={stats?.monthlyCash || {}}
-          />
+        <SalesGrowthChart
+  monthlySales={stats?.monthlySales || {}}
+  monthlyCash={stats?.monthlyCash || {}}
+/>
+
 
           <TopDefaulters defaulters={stats.topDefaulters || []} />
         </div>
