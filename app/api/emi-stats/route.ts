@@ -32,18 +32,18 @@ export async function GET() {
 
     const customers = await Customer.find({ status: "APPROVED" });
     totalCustomers = customers.length;
-
+   
     customers.forEach((customer: any) => {
       let customerPending = 0;
-
+        const amount =customer.price || 0;
+        totalSales += amount;
+        totalCashReceived += customer.downPayment || 0;
+ 
       customer.emis?.forEach((emi: any) => {
         totalEmis++;
-
         const emiAmount = emi.amount || 0;
         const paidAmount = emi.paidAmount || 0;
-
-        totalSales += emiAmount;
-        totalCashReceived += paidAmount;
+        totalCashReceived += (paidAmount);
         pendingCash += emiAmount - paidAmount;
         customerPending += emiAmount - paidAmount;
 
@@ -56,11 +56,9 @@ export async function GET() {
         });
 
         // 📊 Monthly aggregation
-        monthlySales[monthKey] =
-          (monthlySales[monthKey] || 0) + emiAmount;
+        monthlySales[monthKey] = (monthlySales[monthKey] || 0) + emiAmount;
 
-        monthlyCash[monthKey] =
-          (monthlyCash[monthKey] || 0) + paidAmount;
+        monthlyCash[monthKey] = (monthlyCash[monthKey] || 0) + paidAmount;
 
         // 📌 Status counts
         if (emi.status === "PAID") {
@@ -120,9 +118,6 @@ export async function GET() {
       topDefaulters,
     });
   } catch (err: any) {
-    return NextResponse.json(
-      { error: err.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

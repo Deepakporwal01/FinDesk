@@ -12,7 +12,8 @@ export interface IPayment {
    EMI TYPE (EXTENDED, NOT BROKEN)
 ========================= */
 export interface IEmi {
-  amount: number;        // full EMI amount
+  amount: number;      
+  penalty: number;       // penalty amount
   paidAmount: number;    // total paid so far (cached)
   dueDate: Date;
   paidDate?: Date | null; // last payment date (cached)
@@ -25,19 +26,21 @@ export interface IEmi {
    CUSTOMER TYPE (UNCHANGED)
 ========================= */
 export interface ICustomer {
-  profilePic: string;
+  profileImage: string;
   name: string;
   fatherName?: string;
   address?: string;
   contact?: string;
   model?: string;
   imei: string;
+  aadhar?: string;
   alternateNumber?: string;
   supplier?: string;
   supplierNumber?: string;
   price?: number;
   emiAmount?: number;
   downPayment?: number;
+  pendingdownPayment?: number;
 
   emis: IEmi[];
 
@@ -69,6 +72,7 @@ const paymentSchema = new Schema<IPayment>(
 const emiSchema = new Schema<IEmi>(
   {
     amount: { type: Number, required: true },
+    penalty: { type: Number, default: 0 }, // ✅ NEW
 
     paidAmount: {
       type: Number,
@@ -102,7 +106,7 @@ const emiSchema = new Schema<IEmi>(
 const customerSchema = new Schema<ICustomer>(
   {
     name: { type: String, required: true },
-    profilePic: { type: String, default: "" },
+    profileImage: { type: String, default: "" },
     fatherName: String,
     address: String,
     contact: String,
@@ -117,6 +121,7 @@ const customerSchema = new Schema<ICustomer>(
     price: Number,
     emiAmount: Number,
     downPayment: Number,
+    pendingdownPayment: Number,
 
     emis: { type: [emiSchema], default: [] },
 

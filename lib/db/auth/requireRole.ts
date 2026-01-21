@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { verifyToken } from "./verifyToken";
+import { verifyToken, UserRole } from "./verifyToken";
 
 export function requireRole(
   req: Request,
-  allowedRoles: ("ADMIN" | "AGENT")[]
+  allowedRoles: UserRole[]
 ) {
   try {
     const user = verifyToken(req);
@@ -18,7 +18,7 @@ export function requireRole(
     }
 
     return { user };
-  } catch {
+  } catch (err) {
     return {
       error: NextResponse.json(
         { error: "Unauthorized" },

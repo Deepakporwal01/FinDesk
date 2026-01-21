@@ -4,19 +4,12 @@ import jwt from "jsonwebtoken";
 import User from "@/models/User";
 import { connectDB } from "@/lib/db/connectDb";
 
-/**
- * LOGIN
- * POST /api/auth/login
- */
 export async function POST(req: Request) {
   try {
     await connectDB();
 
     const { email, password } = await req.json();
 
-    /* =========================
-       VALIDATION
-    ========================= */
     if (!email || !password) {
       return NextResponse.json(
         { error: "Email and password are required" },
@@ -24,9 +17,6 @@ export async function POST(req: Request) {
       );
     }
 
-    /* =========================
-       FIND USER
-    ========================= */
     const user = await User.findOne({ email });
     if (!user) {
       return NextResponse.json(
@@ -35,9 +25,7 @@ export async function POST(req: Request) {
       );
     }
 
-    /* =========================
-       PASSWORD CHECK
-    ========================= */
+    // 🔐 COMPARE HASH
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return NextResponse.json(
@@ -46,12 +34,9 @@ export async function POST(req: Request) {
       );
     }
 
-    /* =========================
-       CREATE JWT
-    ========================= */
     const token = jwt.sign(
       {
-        id: user._id,
+        id: user._id.toString(),
         role: user.role,
       },
       process.env.JWT_SECRET!,
@@ -64,9 +49,10 @@ export async function POST(req: Request) {
       role: user.role,
       name: user.name,
     });
-  } catch (error: any) {
+  } catch (err) {
+    console.error("LOGIN ERROR:", err);
     return NextResponse.json(
-      { error: error.message },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

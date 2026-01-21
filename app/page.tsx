@@ -145,6 +145,12 @@ export default function Home() {
                 >
                   Agent
                 </Link>
+                <Link
+                  href="/users"
+                  className="border px-4 py-2 rounded-lg text-black"
+                >
+                  Users
+                </Link>
               </>
             )}
 
@@ -263,6 +269,13 @@ export default function Home() {
                   >
                     Agent
                   </Link>
+                  <Link
+                    href="/users"
+                    onClick={() => setMenuOpen(false)}
+                    className="border px-4 py-2 rounded-lg text-center text-black"
+                  >
+                    Users
+                  </Link>
                
                 </>
               )}
@@ -289,7 +302,7 @@ export default function Home() {
       {/* ================= DASHBOARD ================= */}
       {role === "ADMIN" && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Link href="/emi-list?type=total">
+          <Link href="/viewcustomer">
             <DashboardCard
               title="Total Customers"
               value={stats?.totalCustomers ?? "--"}

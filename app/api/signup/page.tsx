@@ -10,10 +10,12 @@ export default function SignupPage() {
     name: "",
     email: "",
     password: "",
-    role: "AGENT",
   });
 
-const getPasswordStrength = (password: string) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const getPasswordStrength = (password: string) => {
     let score = 0;
     if (password.length >= 8) score++;
     if (/[A-Z]/.test(password)) score++;
@@ -28,25 +30,13 @@ const getPasswordStrength = (password: string) => {
 
   const strength = getPasswordStrength(form.password);
 
-
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  /* =========================
-     HANDLE INPUT
-  ========================= */
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  /* =========================
-     SIGNUP
-  ========================= */
   const handleSignup = async () => {
-    setError("");
     setLoading(true);
+    setError("");
 
     try {
       const res = await fetch("/api/auth/signup", {
@@ -64,118 +54,76 @@ const getPasswordStrength = (password: string) => {
 
       alert("Signup successful. Please login.");
       router.push("/api/login");
-    } catch (err) {
+    } catch {
       setError("Something went wrong");
     } finally {
       setLoading(false);
     }
   };
 
-  /* =========================
-     UI
-  ========================= */
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-100 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
-        {/* HEADER */}
-        <div className="mb-6 text-center">
-          <h2 className="text-3xl font-bold text-gray-800">Create Account</h2>
-          <p className="text-gray-500 text-sm mt-1">Signup as Admin or Agent</p>
-        </div>
+        <h2 className="text-3xl font-bold text-gray-800 text-center">
+          Create Account
+        </h2>
 
-        {/* ERROR */}
         {error && (
-          <div className="mb-4 text-center text-red-600 text-sm bg-red-50 py-2 rounded-lg">
+          <div className="mt-4 text-center text-red-600 text-sm">
             {error}
           </div>
         )}
 
-        {/* NAME */}
-        <div className="mb-4">
-          <label className="block text-sm text-gray-600 mb-1">Full Name</label>
+        <div className="mt-6 space-y-4">
           <input
-            type="text"
             name="name"
+            placeholder="Full Name"
             value={form.name}
             onChange={handleChange}
-            placeholder="Enter full name"
-            className="w-full border rounded-lg px-4 py-2 text-black
-                       focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border rounded-lg px-4 py-2 text-black"
           />
-        </div>
 
-        {/* EMAIL */}
-        <div className="mb-4">
-          <label className="block text-sm text-gray-600 mb-1">
-            Email Address
-          </label>
           <input
-            type="email"
             name="email"
+            type="email"
+            placeholder="Email"
             value={form.email}
             onChange={handleChange}
-            placeholder="Enter email"
-            className="w-full border rounded-lg px-4 py-2 text-black
-                       focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border rounded-lg px-4 py-2 text-black"
           />
-        </div>
 
-        {/* PASSWORD */}
-        <div className="mb-4">
-          <label className="block text-sm text-gray-600 mb-1">Password</label>
           <input
-            type="password"
             name="password"
+            type="password"
+            placeholder="Password"
             value={form.password}
             onChange={handleChange}
-            placeholder="Create password"
-            className="w-full border rounded-lg px-4 py-2 text-black
-                       focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border rounded-lg px-4 py-2 text-black"
           />
-        </div>
-{form.password && (
-          <div className="mb-4">
-            <div className="h-2 bg-gray-200 rounded">
-              <div
-                className={`h-2 rounded ${strength.color}`}
-                style={{ width: strength.width }}
-              />
+
+          {form.password && (
+            <div>
+              <div className="h-2 bg-gray-200 rounded">
+                <div
+                  className={`h-2 rounded ${strength.color}`}
+                  style={{ width: strength.width }}
+                />
+              </div>
+              <p className="text-sm mt-1">
+                Strength: {strength.label}
+              </p>
             </div>
-            <p className="text-sm mt-1 text-gray-600">
-              Strength: <span className="font-medium">{strength.label}</span>
-            </p>
-          </div>
-        )}
+          )}
 
-        {/* ROLE */}
-        <div className="mb-6">
-          <label className="block text-sm text-gray-600 mb-1">Role</label>
-          <select
-            name="role"
-            value={form.role}
-            onChange={handleChange}
-            className="w-full border rounded-lg px-4 py-2 text-black
-                       focus:outline-none focus:ring-2 focus:ring-blue-500"
+          <button
+            onClick={handleSignup}
+            disabled={loading}
+            className="w-full py-3 rounded-xl text-white bg-blue-600"
           >
-            <option value="AGENT">Agent</option>
-            <option value="ADMIN">Admin</option>
-          </select>
+            {loading ? "Creating..." : "Signup"}
+          </button>
         </div>
-
-        {/* BUTTON */}
-        <button
-          onClick={handleSignup}
-          disabled={loading}
-          className="w-full py-3 rounded-xl font-semibold text-white
-                     bg-gradient-to-r from-blue-600 to-purple-600
-                     hover:opacity-90 active:scale-[0.98]
-                     transition disabled:opacity-50"
-        >
-          {loading ? "Creating account..." : "Signup"}
-        </button>
-
-        {/* LOGIN LINK */}
-        <p className="text-sm text-center text-gray-500 mt-6">
+         <p className="text-sm text-center text-gray-500 mt-4">
           Already have an account?{" "}
           <span
             onClick={() => router.push("/api/login")}

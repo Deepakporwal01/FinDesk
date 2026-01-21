@@ -1,10 +1,7 @@
 "use client";
-
 export const dynamic = "force-dynamic";
-
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import Link from "next/link";
 
 /* =========================
    TYPES
@@ -16,6 +13,7 @@ interface EmiItem {
   contact: string;
   model: string;
   amount: number;
+  penalty?: number; // ✅ ADDED
   paidAmount: number;
   dueDate: string;
   paidDate: Date | null;
@@ -36,9 +34,15 @@ function EmiListContent() {
 
   const [emis, setEmis] = useState<EmiItem[]>([]);
   const [loading, setLoading] = useState(true);
+
   const [payAmount, setPayAmount] = useState<
     Record<number, number | undefined>
   >({});
+
+  const [penaltyAmount, setPenaltyAmount] = useState<
+    Record<number, number | undefined>
+  >({}); // ✅ ADDED
+
   const [search, setSearch] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -53,17 +57,13 @@ function EmiListContent() {
       );
       const data = await res.json();
       setEmis(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error("Failed to fetch EMI list", err);
+    } catch {
       setEmis([]);
     } finally {
       setLoading(false);
     }
   };
 
-  /* =========================
-      INITIAL LOAD
-  ========================= */
   useEffect(() => {
     fetchEmis(searchQuery);
   }, [type, searchQuery]);
@@ -79,25 +79,52 @@ function EmiListContent() {
       return;
     }
 
-    try {
-      await fetch(`/api/customers/${customerId}/emi/${emiIndex}/pay`, {
+    await fetch(`/api/customers/${customerId}/emi/${emiIndex}/pay`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: JSON.stringify({ amount }),
+    });
+
+    setPayAmount((prev) => ({
+      ...prev,
+      [emiIndex]: undefined,
+    }));
+
+    fetchEmis(searchQuery);
+  };
+
+  /* =========================
+      ADD PENALTY (NEW)
+  ========================= */
+  const addPenalty = async (customerId: string, emiIndex: number) => {
+    const amount = penaltyAmount[emiIndex];
+
+    if (!amount || amount <= 0) {
+      alert("Enter valid penalty amount");
+      return;
+    }
+ 
+    await fetch(
+      `/api/customers/${customerId}/emi/${emiIndex}/penalty`,
+      {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({ amount }),
-      });
+        body: JSON.stringify({ penalty: amount }),
+      }
+    );
 
-      setPayAmount((prev) => ({
-        ...prev,
-        [emiIndex]: undefined,
-      }));
+    setPenaltyAmount((prev) => ({
+      ...prev,
+      [emiIndex]: undefined,
+    }));
 
-      fetchEmis(searchQuery);
-    } catch (err) {
-      console.error("Payment failed", err);
-    }
+    fetchEmis(searchQuery);
   };
 
   /* =========================
@@ -114,9 +141,6 @@ function EmiListContent() {
     return due < today;
   };
 
-  /* =========================
-      LOADING
-  ========================= */
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white text-gray-700">
@@ -125,12 +149,8 @@ function EmiListContent() {
     );
   }
 
-  /* =========================
-      UI
-  ========================= */
   return (
     <div className="min-h-screen bg-white px-4 sm:px-6 py-8">
-      {/* HEADER */}
       <div className="mb-6">
         <button
           onClick={() => router.back()}
@@ -143,20 +163,17 @@ function EmiListContent() {
           {type.replace("-", " ")} EMI Customers
         </h1>
 
-        {/* 🔍 SEARCH BAR WITH ICON */}
         <div className="relative mt-4 w-full max-w-md">
           <input
             type="text"
             placeholder="Search by name or mobile number"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-black"
           />
-
           <button
             onClick={() => setSearchQuery(search)}
             className="absolute right-3 top-1/2 -translate-y-1/2"
-            title="Search"
           >
             🔍
           </button>
@@ -170,18 +187,23 @@ function EmiListContent() {
       ) : (
         <div className="space-y-5">
           {emis.map((emi) => {
-            const remaining = emi.amount - emi.paidAmount;
             const overdue = isOverdue(emi);
+ 
+            const remaining =
+              emi.amount +
+              (emi.penalty || 0) -
+              emi.paidAmount; // ✅ UPDATED
 
             return (
               <div
-                onClick={() => router.push(`/viewcustomer/${emi.customerId}`)}
                 key={`${emi.customerId}-${emi.emiIndex}`}
+                onClick={() =>
+                  router.push(`/viewcustomer/${emi.customerId}`)
+                }
                 className={`relative rounded-2xl border border-gray-200 shadow-sm p-6 flex justify-between ${
                   overdue ? "bg-red-50" : "bg-white"
                 }`}
               >
-                {/* STATUS STRIP */}
                 <span
                   className={`absolute left-0 top-0 h-full w-1.5 rounded-l-2xl ${
                     emi.status === "PAID"
@@ -199,15 +221,15 @@ function EmiListContent() {
                   <p className="text-lg font-semibold text-gray-900">
                     Name : {emi.name}
                   </p>
-
-                  <p className="text-md text-gray-700">Model: {emi.model}</p>
-
+                  <p className="text-md text-gray-700">
+                    Model: {emi.model}
+                  </p>
                   <p className="text-md text-black">
                     Contact Number : <b>{emi.contact}</b>
                   </p>
-
                   <p className="text-sm text-gray-800">
-                    Due Date: {new Date(emi.dueDate).toDateString()}
+                    Due Date:{" "}
+                    {new Date(emi.dueDate).toDateString()}
                   </p>
 
                   {overdue && (
@@ -216,17 +238,12 @@ function EmiListContent() {
                     </p>
                   )}
 
-                  {/* ✅ PAYMENT HISTORY (MOBILE SAFE, NO UI CHANGE) */}
-                  {emi.payments && emi.payments.length > 0 && (
-                    <div className="mt-1 text-md text-green-600 space-y-1 wrap-break-words">
-                      {emi.payments.map((p, i) => (
-                        <p key={i} className="whitespace-normal">
-                          Paid <b>₹{p.amount}</b> on{" "}
-                          {new Date(p.date).toDateString()}
-                        </p>
-                      ))}
-                    </div>
-                  )}
+                  {emi.payments?.map((p, i) => (
+                    <p key={i} className="text-green-600">
+                      Paid ₹{p.amount} on{" "}
+                      {new Date(p.date).toDateString()}
+                    </p>
+                  ))}
 
                   {emi.status !== "PAID" && (
                     <p className="text-sm text-red-600">
@@ -277,12 +294,55 @@ function EmiListContent() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          payEmi(emi.customerId, emi.emiIndex);
+                          payEmi(
+                            emi.customerId,
+                            emi.emiIndex
+                          );
                         }}
                         className="px-4 py-2 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-800"
                       >
                         Pay Now
                       </button>
+
+                      {/* ✅ ADD PENALTY (ONLY OVERDUE) */}
+                      {overdue && (
+                        <>
+                          <input
+                            type="number"
+                            placeholder="Penalty ₹"
+                            value={
+                              penaltyAmount[emi.emiIndex] ??
+                              ""
+                            }
+                            onClick={(e) =>
+                              e.stopPropagation()
+                            }
+                            onChange={(e) =>
+                              setPenaltyAmount((prev) => ({
+                                ...prev,
+                                [emi.emiIndex]:
+                                  e.target.value === ""
+                                    ? undefined
+                                    : Number(e.target.value),
+                              }))
+                            }
+                            className="w-36 px-3 py-2 rounded-lg border border-black bg-white text-sm text-black"
+                          />
+
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addPenalty(
+                                emi.customerId,
+                                emi.emiIndex
+                              );
+                            }}
+                            className="px-4 py-2 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-800"
+                          >
+                            Add Penalty
+                          </button>
+                        </>
+                      )}
                     </>
                   )}
                 </div>

@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
 ====================== */
 export async function POST(req: NextRequest) {
   try {
-    console.log("✅ POST /api/customers HIT");
+    
 
     await connectDB();
 
@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
       model,
       imei,
       alternateNumber,
+      profileImage,
       supplier,
       supplierNumber,
       price,
@@ -82,6 +83,7 @@ export async function POST(req: NextRequest) {
     for (let i = 0; i < Number(emiMonths); i++) {
       emis.push({
         amount: Number(emiAmount),
+        penalty: 0,
         paidAmount: 0,
         dueDate: new Date(date),
         status: "PENDING",
@@ -95,6 +97,7 @@ export async function POST(req: NextRequest) {
       address,
       contact,
       model,
+      profileImage,
       imei,
       alternateNumber,
       supplier,

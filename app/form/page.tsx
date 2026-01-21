@@ -1,5 +1,5 @@
 "use client";
-
+import Image from "next/image";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -16,22 +16,24 @@ export default function Page() {
     contact: "",
     model: "",
     imei: "",
+    aadhar : "",
     alternateNumber: "",
     supplier: "",
     supplierNumber: "",
     price: "",
     downPayment: "",
+    pendingDownPayment: "",
     emiAmount: "",
     emiMonths: "",
     firstEmiDate: "",
   });
 
-  // UI-only (not sent to backend)
+  // UI-only (image file + preview)
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
 
   /* =========================
-     HANDLE CHANGE
+     HANDLE INPUT CHANGE
   ========================= */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -45,17 +47,53 @@ export default function Page() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setProfileImage(file); // only for UI
-    setPreview(URL.createObjectURL(file)); // preview only
+    setProfileImage(file);
+    setPreview(URL.createObjectURL(file));
   };
 
   /* =========================
-     SUBMIT FORM (JSON ONLY)
+     CLOUDINARY UPLOAD (FIXED)
+  ========================= */
+  const uploadToCloudinary = async (file: File): Promise<string> => {
+    const data = new FormData();
+    data.append("file", file);
+    data.append(
+      "upload_preset",
+      process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!,
+    );
+
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      {
+        method: "POST",
+        body: data,
+      },
+    );
+
+    const json = await res.json();
+
+    if (!json.secure_url) {
+      throw new Error("Cloudinary upload failed");
+    }
+
+    return json.secure_url;
+  };
+
+  /* =========================
+     SUBMIT FORM
   ========================= */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
+      let imageUrl = "";
+
+      if (profileImage) {
+        imageUrl = await uploadToCloudinary(profileImage);
+      }
+
       const res = await fetch("/api/customers", {
         method: "POST",
         headers: {
@@ -66,9 +104,10 @@ export default function Page() {
           ...formData,
           price: Number(formData.price),
           downPayment: Number(formData.downPayment),
+          pendingDownPayment: Number(formData.pendingDownPayment),
           emiAmount: Number(formData.emiAmount),
           emiMonths: Number(formData.emiMonths),
-          // ❌ profileImage NOT sent
+          profileImage: imageUrl,
         }),
       });
 
@@ -81,8 +120,8 @@ export default function Page() {
 
       alert("Customer added successfully");
       router.push("/");
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error(error);
       alert("Something went wrong");
     }
   };
@@ -91,11 +130,7 @@ export default function Page() {
      EMI PREVIEW
   ========================= */
   const previewEmis = () => {
-    if (
-      !formData.emiMonths ||
-      !formData.firstEmiDate ||
-      !formData.emiAmount
-    )
+    if (!formData.emiMonths || !formData.firstEmiDate || !formData.emiAmount)
       return [];
 
     const emis = [];
@@ -118,7 +153,6 @@ export default function Page() {
         onSubmit={handleSubmit}
         className="bg-white w-full max-w-lg rounded-2xl shadow-xl p-8 space-y-5 relative"
       >
-        {/* BACK BUTTON */}
         <button
           type="button"
           onClick={() => router.back()}
@@ -131,19 +165,19 @@ export default function Page() {
           EMI Customer Details
         </h2>
 
-        {/* PROFILE IMAGE (UI ONLY) */}
+        {/* PROFILE IMAGE (UI UNCHANGED) */}
         <div className="flex flex-col items-center gap-3">
           <div className="w-24 h-24 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center shadow">
             {preview ? (
-              <img
+              <Image
                 src={preview}
                 alt="Profile Preview"
+                width={100}
+                height={100}
                 className="w-full h-full object-cover"
               />
             ) : (
-              <span className="text-xs text-gray-500">
-                No Image
-              </span>
+              <span className="text-xs text-gray-500">No Image</span>
             )}
           </div>
 
@@ -152,13 +186,14 @@ export default function Page() {
             <input
               type="file"
               accept="image/*"
+              capture="environment"
               onChange={handleImageChange}
               className="hidden"
             />
           </label>
         </div>
 
-        {/* BASIC DETAILS */}
+        {/* INPUTS */}
         {[
           { name: "name", label: "Name" },
           { name: "fatherName", label: "Father's Name" },
@@ -167,6 +202,7 @@ export default function Page() {
           { name: "alternateNumber", label: "Alternate Number" },
           { name: "model", label: "Phone Model" },
           { name: "imei", label: "IMEI / Serial Number" },
+          { name: "aadhar", label: "Aadhar Number" },
           { name: "supplier", label: "Supplier" },
           { name: "supplierNumber", label: "Supplier Number" },
         ].map((f) => (
@@ -179,7 +215,6 @@ export default function Page() {
           />
         ))}
 
-        {/* FINANCIAL DETAILS */}
         <Input
           name="price"
           label="Price (₹)"
@@ -187,7 +222,6 @@ export default function Page() {
           value={formData.price}
           onChange={handleChange}
         />
-
         <Input
           name="downPayment"
           label="Down Payment (₹)"
@@ -195,7 +229,13 @@ export default function Page() {
           value={formData.downPayment}
           onChange={handleChange}
         />
-
+        <Input
+          name="pendingDownPayment"
+          label=" Pending Down Payment (₹)"
+          type="number"
+          value={formData.pendingDownPayment}
+          onChange={handleChange}
+        />
         <Input
           name="emiAmount"
           label="EMI Amount (₹)"
@@ -203,7 +243,6 @@ export default function Page() {
           value={formData.emiAmount}
           onChange={handleChange}
         />
-
         <Input
           name="emiMonths"
           label="EMI Months"
@@ -211,7 +250,6 @@ export default function Page() {
           value={formData.emiMonths}
           onChange={handleChange}
         />
-
         <Input
           name="firstEmiDate"
           label="First EMI Date"
@@ -220,25 +258,20 @@ export default function Page() {
           onChange={handleChange}
         />
 
-        {/* EMI PREVIEW */}
         {previewEmis().length > 0 && (
           <div className="bg-gray-900 text-white p-4 rounded-xl text-sm">
-            <p className="font-semibold mb-2">
-              EMI Schedule Preview
-            </p>
+            <p className="font-semibold mb-2">EMI Schedule Preview</p>
             {previewEmis().map((emi, i) => (
               <div key={i} className="flex justify-between">
                 <span>Month {i + 1}</span>
                 <span>
-                  ₹{emi.amount} –{" "}
-                  {emi.dueDate.toDateString()}
+                  ₹{emi.amount} – {emi.dueDate.toDateString()}
                 </span>
               </div>
             ))}
           </div>
         )}
 
-        {/* SUBMIT */}
         <button
           type="submit"
           className="w-full mt-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:opacity-90 transition"
@@ -264,14 +297,11 @@ function Input({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-sm text-gray-600">
-        {label}
-      </label>
+      <label className="text-sm text-gray-600">{label}</label>
       <input
         {...props}
         value={value ?? ""}
-        className="border text-black rounded-lg px-4 py-2
-                   focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="border text-black rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
     </div>
   );

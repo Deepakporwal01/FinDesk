@@ -80,7 +80,7 @@ export async function GET(req: Request) {
             paidAmount: emi.paidAmount || 0,
             dueDate: emi.dueDate,
             paidDate: emi.paidDate || null,
-
+            penalty: emi.penalty || 0,
             status: emi.status,
             payments: emi.payments || [],
           });

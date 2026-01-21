@@ -38,8 +38,8 @@ export default function LoginPage() {
       // ✅ STORE JWT & ROLE (EXPRESS STYLE)
       localStorage.setItem("token", data.token);
       localStorage.setItem("id", data.id);
-      localStorage.setItem("role", data.role);
       localStorage.setItem("name", data.name);
+      localStorage.setItem("role", data.role);
 
       // ✅ REDIRECT BASED ON ROLE
       if (data.role === "ADMIN") {
