@@ -1,18 +1,21 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import User from "@/models/User";
 import { connectDB } from "@/lib/db/connectDb";
 import { requireRole } from "@/lib/db/auth/requireRole";
 
 export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   await connectDB();
 
-  const auth = requireRole(req, ["ADMIN"]);
+  // ✅ await params (Next.js 16 requirement)
+  const { id } = await params;
+
+  const auth = await requireRole(req, ["ADMIN"]);
   if (auth.error) return auth.error;
 
-  const user = await User.findById(params.id);
+  const user = await User.findById(id);
   if (!user) {
     return NextResponse.json(
       { error: "User not found" },
@@ -28,7 +31,7 @@ export async function DELETE(
     );
   }
 
-  await User.findByIdAndDelete(params.id);
+  await User.findByIdAndDelete(id);
 
   return NextResponse.json({ success: true });
 }
