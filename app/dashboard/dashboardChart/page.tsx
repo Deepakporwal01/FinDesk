@@ -8,7 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
-} from "recharts";
+} from "recharts"; 
 
 interface Props {
   monthlySales?: Record<string, number>;
