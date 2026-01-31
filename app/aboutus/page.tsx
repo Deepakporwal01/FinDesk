@@ -8,7 +8,7 @@ export default function AboutUs() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       <div className="max-w-5xl mx-auto px-4 py-10">
-
+ 
         {/* BACK BUTTON */}
         <button
           onClick={() => router.back()}
